@@ -4,7 +4,7 @@
 
 ```
 CURRENT_MILESTONE: M2 (Contract & Frontend Core)
-LAST_VERIFIED_COMMIT: 7b9750a (TASK-018: Implement UtteranceBar, ResponseLine, ModeBadge, MemoryIndicator, and ToolTrace)
+LAST_VERIFIED_COMMIT: 4f2527e (TASK-019: Implement App Integration and Ambient Styling)
 ACTIVE_LOCKS: none
 AGENT_MODE: DIRECT
 SCOPE_PROFILE: FULL (R ≈ 52h)
@@ -443,7 +443,7 @@ SCOPE_PROFILE: FULL (R ≈ 52h)
 - **OWNER:** CODEX
 - **PRIORITY:** P0
 - **TRACK:** BUILD
-- **STATUS:** TODO
+- **STATUS:** DONE
 - **DEPENDS:** TASK-016, TASK-017, TASK-018
 - **FILES:** `frontend/src/App.tsx`, `frontend/src/App.css`, `frontend/src/index.css`, `frontend/index.html`
 - **SPEC REFS:** `docs/01_PRODUCT_SPEC.md` surface design, `docs/02_ARCHITECTURE.md` §5
