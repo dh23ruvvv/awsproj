@@ -4,7 +4,7 @@
 
 ```
 CURRENT_MILESTONE: M2 (Contract & Frontend Core)
-LAST_VERIFIED_COMMIT: 2c0169f (TASK-012: Implement Agent Router and Loop Integration)
+LAST_VERIFIED_COMMIT: 3514bef (TASK-013: Implement OpenAPI export and contract check script)
 ACTIVE_LOCKS: none
 AGENT_MODE: DIRECT
 SCOPE_PROFILE: FULL (R ≈ 52h)
@@ -302,7 +302,7 @@ SCOPE_PROFILE: FULL (R ≈ 52h)
 - **OWNER:** GEMINI
 - **PRIORITY:** P0
 - **TRACK:** BUILD
-- **STATUS:** TODO
+- **STATUS:** DONE
 - **DEPENDS:** TASK-012
 - **FILES:** `server/export_openapi.py`, `generated/openapi.json`, `scripts/contract_check.ps1`
 - **SPEC REFS:** `docs/02_ARCHITECTURE.md` §11
