@@ -4,7 +4,7 @@
 
 ```
 CURRENT_MILESTONE: M1 (Walking Skeleton)
-LAST_VERIFIED_COMMIT: e42524d (docs: architecture handoff)
+LAST_VERIFIED_COMMIT: 91da11f (TASK-004: Project Scaffolding - Backend)
 ACTIVE_LOCKS: none
 AGENT_MODE: DIRECT
 SCOPE_PROFILE: FULL (R ≈ 52h)
@@ -77,12 +77,12 @@ SCOPE_PROFILE: FULL (R ≈ 52h)
 - **OWNER:** CODEX
 - **PRIORITY:** P0
 - **TRACK:** BUILD
-- **STATUS:** TODO
+- **STATUS:** DONE
 - **DEPENDS:** TASK-001
 - **PARALLEL-SAFE-WITH:** TASK-005
 - **FILES:** `server/__init__.py`, `server/main.py`, `server/config.py`, `server/database.py`, `server/models.py`, `server/clock.py`, `server/seed.json`, `requirements.txt`
-- **SPEC REFS:** `docs/02_ARCHITECTURE.md` §1, §2, §3, §12
-- **READ ONLY:** `docs/02_ARCHITECTURE.md` §1–3, §9, §12
+- **SPEC REFS:** `docs/02_ARCHITECTURE.md` §1, §2, §3, §4, §5, §12
+- **READ ONLY:** `docs/02_ARCHITECTURE.md` §1–5, §9, §12
 - **IMPLEMENT:**
   - `server/config.py`: Pydantic Settings class with all env vars from §2
   - `server/database.py`: SQLite connection with FK/WAL/busy_timeout pragmas, schema creation from §3, seed function loading `server/seed.json`
