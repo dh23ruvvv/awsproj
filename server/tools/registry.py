@@ -65,6 +65,7 @@ def _proposal_schema(blocks_key: str) -> dict:
                 "items": {
                     "type": "object",
                     "properties": {
+                        "id": {"type": "string"},
                         "title": {"type": "string", "maxLength": 200},
                         "start_time": {"type": "string", "format": "date-time"},
                         "end_time": {"type": "string", "format": "date-time"},

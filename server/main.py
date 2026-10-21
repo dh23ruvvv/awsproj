@@ -1,11 +1,13 @@
-"""FastAPI application bootstrap and database lifecycle."""
-
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, status
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from server.config import settings
 from server.database import init_db
+from server.models import ErrorDetail, ErrorEnvelope
 from server.routers import agent, data, plans, sessions
 
 
@@ -17,6 +19,27 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="FlowPilot", lifespan=lifespan)
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(_request: Request, exc: RequestValidationError) -> JSONResponse:
+    """Return documented ErrorEnvelope for request validation errors."""
+    envelope = ErrorEnvelope(error=ErrorDetail(code="VALIDATION_ERROR", message="Invalid request payload", details={"errors": exc.errors()}))
+    return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content=envelope.model_dump())
+
+
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(_request: Request, exc: StarletteHTTPException) -> JSONResponse:
+    """Return documented ErrorEnvelope for HTTP status exceptions."""
+    envelope = ErrorEnvelope(error=ErrorDetail(code=f"HTTP_{exc.status_code}", message=str(exc.detail)))
+    return JSONResponse(status_code=exc.status_code, content=envelope.model_dump())
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(_request: Request, _exc: Exception) -> JSONResponse:
+    """Catch unexpected exceptions and return documented ErrorEnvelope without leaking raw traces."""
+    envelope = ErrorEnvelope(error=ErrorDetail(code="INTERNAL_SERVER_ERROR", message="An unexpected server error occurred. Please try again."))
+    return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=envelope.model_dump())
 app.include_router(sessions.router, prefix="/api/v1")
 app.include_router(plans.router, prefix="/api/v1")
 app.include_router(agent.router, prefix="/api/v1")

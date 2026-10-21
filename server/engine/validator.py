@@ -1,4 +1,4 @@
-﻿"""Validate proposals without changing caller-owned calendar data."""
+"""Validate proposals without changing caller-owned calendar data."""
 
 from datetime import datetime
 
@@ -45,10 +45,15 @@ def validate_schedule(blocks, existing_blocks=None, current_time=None):
     for old in existing_blocks or []:
         if not (old.get("immutable") or str(old.get("status", "")).lower() == "completed"):
             continue
-        matches = [new for new in blocks if _identity(new) == _identity(old)]
+        matches = [
+            new for new in blocks
+            if _identity(new) == _identity(old)
+            or (new.get("title") and new.get("title") == old.get("title"))
+            or (new.get("task_id") and new.get("task_id") == old.get("task_id"))
+        ]
         if not any(new.get("start_time") == old.get("start_time") and
                    new.get("end_time") == old.get("end_time") and
-                   new.get("task_id") == old.get("task_id") and
+                   (not old.get("task_id") or not new.get("task_id") or new.get("task_id") == old.get("task_id")) and
                    new.get("title") == old.get("title") for new in matches):
             errors.append(f"Protected completed/immutable block modified or removed: {old.get('title')}")
     return errors

@@ -35,15 +35,56 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     "Content-Type": "application/json",
     ...(options.headers || {}),
   };
-  const response = await fetch(url, { ...options, headers });
-  const data = await response.json();
-  if (!response.ok) {
-    const error: ApiError = data?.error
-      ? data
-      : { error: { code: `HTTP_${response.status}`, message: response.statusText, details: data } };
+  let response: Response;
+  try {
+    response = await fetch(url, { ...options, headers });
+  } catch (err) {
+    const error: ApiError = {
+      error: {
+        code: "NETWORK_ERROR",
+        message: "Unable to reach FlowPilot server. Please ensure the backend is running.",
+        details: { original: err instanceof Error ? err.message : String(err) },
+      },
+    };
     throw error;
   }
-  return data as T;
+
+  let data: any = null;
+  const contentType = response.headers.get("content-type") || "";
+  if (contentType.includes("application/json")) {
+    try {
+      data = await response.json();
+    } catch {
+      data = null;
+    }
+  } else {
+    try {
+      const text = await response.text();
+      data = text ? { raw: text } : null;
+    } catch {
+      data = null;
+    }
+  }
+
+  if (!response.ok) {
+    if (data?.error?.message) {
+      throw data as ApiError;
+    }
+    const fallbackMessage =
+      typeof data?.raw === "string" && data.raw.trim().length > 0 && data.raw.length < 150
+        ? data.raw.trim()
+        : response.statusText || `Request failed with status ${response.status}`;
+    const error: ApiError = {
+      error: {
+        code: `HTTP_${response.status}`,
+        message: fallbackMessage,
+        details: data,
+      },
+    };
+    throw error;
+  }
+
+  return (data ?? {}) as T;
 }
 
 export async function createSession(
