@@ -1,0 +1,12 @@
+# FlowPilot — Risk Register
+
+| # | Risk | Probability | Impact | Built-in Prevention | Trigger | Fallback | Latest Safe Decision |
+|---|---|---|---|---|---|---|---|
+| R1 | LLM quota exhaustion or API outage | Medium | High | Deterministic provider is default and always works. Circuit breaker (2 failures → 60s cooldown). Mode badge discloses provider. | Gemini returns 429 or 5xx repeatedly | Run entire demo on deterministic. Honestly state "rule-based demo mode" in video and submission. | T-8h (feature freeze) |
+| R2 | MCP transport issues (Streamable HTTP, headers) | Medium | Low | MCP is P1, not P0. App works fully without MCP. | MCP Inspector fails or transport errors in testing | Cut MCP entirely. Submission states "simulated Alexa+ experience" per Approach B. | T-8h |
+| R3 | Schema drift (backend ↔ frontend types) | Medium | High | `contract:check` runs on every merge. OpenAPI generated from Pydantic models. Frontend uses only generated types. | `contract:check` exits 1 | Regenerate types, fix mismatches, re-run. Class B deviation process for breaking changes. | Any time before freeze |
+| R4 | Malformed LLM tool arguments | High | Medium | JSON Schema validation on all tool args. 1 repair attempt (feed validation error back). Fallback to deterministic. | Gemini produces invalid tool call JSON | Deterministic provider handles the turn. `degraded: true` set in response. | N/A (handled at runtime) |
+| R5 | Scope creep | Medium | High | Fixed task board with 20–30 tasks. P1 starts only after all P0 BUILD done. Hard feature freeze at T-8h. | New feature requests or "just one more thing" | Reject new scope. Refer to cut-down ladder. | T-8h |
+| R6 | Windows-specific issues (path separators, native modules) | Low | Medium | No native modules (stdlib sqlite3). PowerShell-safe commands throughout. All scripts tested on Windows. | Build failure, path errors, or SQLite lock issues | Fix Windows-specific path issues. Use `pathlib` in Python, `path.resolve()` in Node. | Any time |
+| R7 | Voice API browser support | Low | Low | Voice is P1. Web Speech API availability checked at runtime. Graceful fallback to text-only. | `window.SpeechRecognition` undefined | Text input is always first-class. Voice button hidden if unavailable. | T-8h |
+| R8 | Ephemeral hosting unavailability | Low | Medium | Hosting is P1 (or P0 only if Devpost requires it). TASK-003 verifies requirements early. | Hosting platform down or quota exceeded at submission time | Demo runs on localhost. Video shows localhost URL. Submission states "run locally." | T-12h |

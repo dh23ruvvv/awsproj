@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environment
+venv/
+.venv/
+env/
+
+# Node
+node_modules/
+frontend/dist/
+frontend/.vite/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# SQLite
+data/
+*.db
+*.db-wal
+*.db-shm
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Build output
+generated/openapi.json.bak
+
+# Handoff (agent work files, except .gitkeep)
+handoff/*
+!handoff/.gitkeep
+
+# Logs
+*.log
+
+# Coverage
+htmlcov/
+.coverage
