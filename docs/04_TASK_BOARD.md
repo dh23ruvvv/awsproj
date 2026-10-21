@@ -4,7 +4,7 @@
 
 ```
 CURRENT_MILESTONE: M3 (Live Provider & Robustness)
-LAST_VERIFIED_COMMIT: 1b77e5c (TASK-015: Implement Gemini Live Provider and Fallback Circuit Breaker)
+LAST_VERIFIED_COMMIT: 96f8557 (TASK-020: Implement Golden Smoke Test and runner script)
 ACTIVE_LOCKS: none
 AGENT_MODE: DIRECT
 SCOPE_PROFILE: FULL (R ≈ 52h)
@@ -468,7 +468,7 @@ SCOPE_PROFILE: FULL (R ≈ 52h)
 - **OWNER:** GEMINI
 - **PRIORITY:** P0
 - **TRACK:** BUILD
-- **STATUS:** TODO
+- **STATUS:** DONE
 - **DEPENDS:** TASK-019
 - **FILES:** `tests/test_golden_smoke.py`, `scripts/smoke.ps1`
 - **SPEC REFS:** `docs/02_ARCHITECTURE.md` §6.2, `docs/01_PRODUCT_SPEC.md` golden demo
