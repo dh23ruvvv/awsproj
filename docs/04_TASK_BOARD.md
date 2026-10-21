@@ -4,7 +4,7 @@
 
 ```
 CURRENT_MILESTONE: M2 (Contract & Frontend Core)
-LAST_VERIFIED_COMMIT: a41fa33 (TASK-016: Implement Schedule Timeline Component)
+LAST_VERIFIED_COMMIT: 7ad54a4 (TASK-017: Implement Plan Preview and Diff Card Component)
 ACTIVE_LOCKS: none
 AGENT_MODE: DIRECT
 SCOPE_PROFILE: FULL (R ≈ 52h)
@@ -394,7 +394,7 @@ SCOPE_PROFILE: FULL (R ≈ 52h)
 - **OWNER:** CODEX
 - **PRIORITY:** P0
 - **TRACK:** BUILD
-- **STATUS:** TODO
+- **STATUS:** DONE
 - **DEPENDS:** TASK-014
 - **PARALLEL-SAFE-WITH:** TASK-016, TASK-018
 - **FILES:** `frontend/src/components/PlanPreview.tsx`, `frontend/src/components/PlanPreview.css`
