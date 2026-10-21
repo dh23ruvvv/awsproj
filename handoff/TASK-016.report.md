@@ -1,0 +1,21 @@
+# TASK-016 Completion Report
+
+- FILES_CHANGED:
+  - frontend/src/components/ScheduleTimeline.tsx
+  - frontend/src/components/ScheduleTimeline.css
+  - handoff/TASK-016.report.md
+- COMMANDS_RUN:
+  - `cd frontend; npm run build`
+  - `git diff --check`
+  - `git status --short`
+- TEST_OUTPUT: PASS. Build exited 0; TypeScript (`tsc --noEmit`) and Vite production build succeeded without warnings or errors. Diff whitespace check passed. Browser rendering was not verified; App integration is outside this task.
+- EDGE_CASES:
+  - Empty schedules display the specified friendly message.
+  - Explicit categories override title inference; unmatched or unknown categories use Work styling.
+  - Title inference follows the specified priority, including PR review before generic review.
+  - Completion follows explicit completed status or an end timestamp at/before the supplied clock. Immutable blocks receive a separate Protected badge.
+  - ISO timestamps and time-only strings are supported; displayed times retain the supplied wall-clock values. Comparisons assume consistent timestamp formats across blocks and currentTime.
+  - Invalid timestamps do not trigger inferred completion; invalid or negative durations are omitted.
+  - Blocks sort chronologically without mutating props; long titles wrap, narrow containers stack time labels above cards, and reduced-motion preferences disable hover movement.
+  - Existing changes to frontend/index.html, frontend/src/main.tsx, and frontend/src/index.css were left untouched and excluded from the commit.
+- CONTRACT_GAPS: NONE.
