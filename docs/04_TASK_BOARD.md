@@ -4,7 +4,7 @@
 
 ```
 CURRENT_MILESTONE: M2 (Contract & Frontend Core)
-LAST_VERIFIED_COMMIT: 7ad54a4 (TASK-017: Implement Plan Preview and Diff Card Component)
+LAST_VERIFIED_COMMIT: 7b9750a (TASK-018: Implement UtteranceBar, ResponseLine, ModeBadge, MemoryIndicator, and ToolTrace)
 ACTIVE_LOCKS: none
 AGENT_MODE: DIRECT
 SCOPE_PROFILE: FULL (R ≈ 52h)
@@ -416,7 +416,7 @@ SCOPE_PROFILE: FULL (R ≈ 52h)
 - **OWNER:** CODEX
 - **PRIORITY:** P0
 - **TRACK:** BUILD
-- **STATUS:** TODO
+- **STATUS:** DONE
 - **DEPENDS:** TASK-014
 - **PARALLEL-SAFE-WITH:** TASK-016, TASK-017
 - **FILES:** `frontend/src/components/UtteranceBar.tsx`, `frontend/src/components/ResponseLine.tsx`, `frontend/src/components/ModeBadge.tsx`, `frontend/src/components/MemoryIndicator.tsx`, `frontend/src/components/ToolTrace.tsx`
