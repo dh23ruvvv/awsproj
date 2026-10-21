@@ -92,3 +92,4 @@ _Gemini appends dated entries below as implementation proceeds._
 | Date | Decision | Rationale |
 |---|---|---|
 | 2026-10-21 | AGENT_MODE: DIRECT | Codex CLI (`codex exec`) tested non-interactively with `--dangerously-bypass-approvals-and-sandbox`. Successfully created `handoff/codex_ping.txt` in 91ms and verified content. Automated CLI delegation verified. |
+| 2026-10-21 | TASK-002: Live Gemini API Verified | Installed google-genai 2.32.0; verified GEMINI_API_KEY with models/gemini-3.5-flash-lite. Exited 0 with text response. Live LLM path active for TASK-015. |

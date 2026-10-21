@@ -3,7 +3,7 @@
 ## STATE
 
 ```
-CURRENT_MILESTONE: M2 (Contract & Frontend Core)
+CURRENT_MILESTONE: M3 (Live Provider & Robustness)
 LAST_VERIFIED_COMMIT: 4f2527e (TASK-019: Implement App Integration and Ambient Styling)
 ACTIVE_LOCKS: none
 AGENT_MODE: DIRECT
@@ -36,7 +36,7 @@ SCOPE_PROFILE: FULL (R ≈ 52h)
 - **OWNER:** HUMAN
 - **PRIORITY:** P0
 - **TRACK:** BUILD
-- **STATUS:** TODO
+- **STATUS:** DONE
 - **DEPENDS:** none
 - **BLOCKS:** TASK-015
 - **FILES:** `.env`
