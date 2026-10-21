@@ -4,7 +4,7 @@
 
 ```
 CURRENT_MILESTONE: M1 (Walking Skeleton)
-LAST_VERIFIED_COMMIT: 752bb85 (TASK-007: Implement READ tool handlers)
+LAST_VERIFIED_COMMIT: e2cf08d (TASK-008: Implement scheduler engine and validator)
 ACTIVE_LOCKS: none
 AGENT_MODE: DIRECT
 SCOPE_PROFILE: FULL (R ≈ 52h)
@@ -181,7 +181,7 @@ SCOPE_PROFILE: FULL (R ≈ 52h)
 - **OWNER:** CODEX
 - **PRIORITY:** P0
 - **TRACK:** BUILD
-- **STATUS:** TODO
+- **STATUS:** DONE
 - **DEPENDS:** TASK-007
 - **FILES:** `server/engine/__init__.py`, `server/engine/scheduler.py`, `server/engine/differ.py`, `server/engine/validator.py`
 - **SPEC REFS:** `docs/02_ARCHITECTURE.md` §4, `docs/01_PRODUCT_SPEC.md` golden demo
