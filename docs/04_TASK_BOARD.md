@@ -4,7 +4,7 @@
 
 ```
 CURRENT_MILESTONE: M3 (Live Provider & Robustness)
-LAST_VERIFIED_COMMIT: a0ef36c (TASK-022: Implement static file serving and development scripts)
+LAST_VERIFIED_COMMIT: a5552e0 (TASK-023: Update README with quickstart, test commands, and live provider details)
 ACTIVE_LOCKS: none
 AGENT_MODE: DIRECT
 SCOPE_PROFILE: FULL (R ≈ 52h)
@@ -544,7 +544,7 @@ SCOPE_PROFILE: FULL (R ≈ 52h)
 - **OWNER:** GEMINI
 - **PRIORITY:** P0
 - **TRACK:** SUBMIT
-- **STATUS:** TODO
+- **STATUS:** DONE
 - **DEPENDS:** TASK-020
 - **FILES:** `README.md`
 - **SPEC REFS:** `docs/00_PROJECT_CONTEXT.md`
