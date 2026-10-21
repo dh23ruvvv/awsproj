@@ -1,4 +1,4 @@
-﻿"""Compute wire-format schedule differences by persistent block identity."""
+"""Compute wire-format schedule differences by persistent block identity."""
 
 from .validator import _identity, _time
 
@@ -9,6 +9,8 @@ def compute_diff(old_blocks, new_blocks):
     remaining = list(new_blocks)
     for old in old_blocks:
         match = next((new for new in remaining if _identity(new) == _identity(old)), None)
+        if match is None:
+            match = next((new for new in remaining if (new.get("title") and new.get("title") == old.get("title")) or (new.get("task_id") and new.get("task_id") == old.get("task_id"))), None)
         base = {"block_id": str(old.get("block_id", old.get("id", _identity(old)))), "title": old["title"]}
         if match is None:
             result["dropped"].append({**base, "reason": "Not present in proposed schedule"})
