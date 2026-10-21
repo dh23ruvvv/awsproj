@@ -4,7 +4,7 @@
 
 ```
 CURRENT_MILESTONE: M3 (Live Provider & Robustness)
-LAST_VERIFIED_COMMIT: 96f8557 (TASK-020: Implement Golden Smoke Test and runner script)
+LAST_VERIFIED_COMMIT: 84716c9 (TASK-021: Implement Security Tests (injection, idempotency, stale plan))
 ACTIVE_LOCKS: none
 AGENT_MODE: DIRECT
 SCOPE_PROFILE: FULL (R ≈ 52h)
@@ -493,7 +493,7 @@ SCOPE_PROFILE: FULL (R ≈ 52h)
 - **OWNER:** GEMINI
 - **PRIORITY:** P0
 - **TRACK:** BUILD
-- **STATUS:** TODO
+- **STATUS:** DONE
 - **DEPENDS:** TASK-020
 - **FILES:** `tests/test_injection.py`, `tests/test_idempotency.py`, `tests/test_stale_plan.py`, `tests/fixtures/offline_responses.json`
 - **SPEC REFS:** `docs/02_ARCHITECTURE.md` §9
