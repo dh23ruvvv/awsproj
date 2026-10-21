@@ -1,21 +1,33 @@
 """Session-scoped agent turns and an in-memory sliding message limit."""
 
 from collections import deque
+from functools import lru_cache
+import os
 from threading import Lock
 from time import monotonic
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Header, Query
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from server.database import get_connection
+from server.config import settings
 from server.models import AgentMessageResponse, ErrorDetail, ErrorEnvelope
 from server.providers.base import AgentContext
 from server.providers.deterministic import DeterministicProvider
+from server.providers.fallback import FallbackProvider
 
 router = APIRouter()
 _message_times: dict[str, deque[float]] = {}
 _rate_lock = Lock()
+
+
+@lru_cache(maxsize=1)
+def _live_provider(api_key: str) -> FallbackProvider:
+    """Keep circuit state across requests; load the optional SDK only in live mode."""
+    from server.providers.gemini import GeminiProvider
+
+    return FallbackProvider(GeminiProvider(), DeterministicProvider())
 
 
 class AgentMessageRequest(BaseModel):
@@ -32,8 +44,12 @@ def _error(status: int, code: str, message: str) -> JSONResponse:
 
 
 @router.post("/sessions/{sid}/agent/message", response_model=AgentMessageResponse)
-async def agent_message(sid: str, request: AgentMessageRequest) -> AgentMessageResponse | JSONResponse:
-    """Run the deterministic provider against an existing session's real tools."""
+async def agent_message(
+    sid: str, request: AgentMessageRequest,
+    provider: str | None = Query(default=None),
+    provider_header: str | None = Header(default=None, alias="X-FlowPilot-Provider"),
+) -> AgentMessageResponse | JSONResponse:
+    """Run the selected provider against an existing session's real tools."""
     connection = get_connection()
     try:
         if connection.execute("SELECT 1 FROM sessions WHERE id = ?", (sid,)).fetchone() is None:
@@ -48,9 +64,13 @@ async def agent_message(sid: str, request: AgentMessageRequest) -> AgentMessageR
                               "Rate limit exceeded. Maximum 10 messages per minute per session.")
             timestamps.append(current)
 
-        provider = DeterministicProvider()
+        selected = provider or provider_header or settings.flowpilot_default_provider
+        if selected not in {"gemini", "deterministic"}:
+            return _error(400, "INVALID_PROVIDER", "Provider must be gemini or deterministic")
+        api_key = settings.gemini_api_key or os.getenv("GEMINI_API_KEY")
+        active_provider = _live_provider(api_key) if selected == "gemini" and api_key else DeterministicProvider()
         context = AgentContext(session_id=sid, db_conn=connection)
-        result = await provider.run_agent_turn(request.message, context)
+        result = await active_provider.run_agent_turn(request.message, context)
         state_version = connection.execute(
             "SELECT state_version FROM sessions WHERE id = ?", (sid,)
         ).fetchone()["state_version"]

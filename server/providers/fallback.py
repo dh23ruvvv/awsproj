@@ -1,0 +1,32 @@
+"""Deterministic failover with a shared, time-based circuit breaker."""
+
+import time
+
+from .base import AgentContext, AgentTurnResult, Provider
+
+
+class FallbackProvider:
+    """Skip the primary for sixty seconds after two consecutive failed turns."""
+
+    def __init__(self, primary: Provider, fallback: Provider) -> None:
+        """Retain providers and circuit state across requests."""
+        self.primary = primary
+        self.fallback = fallback
+        self.failure_count = 0
+        self.last_failure_time = 0.0
+
+    async def run_agent_turn(self, message: str, context: AgentContext) -> AgentTurnResult:
+        """Run the primary when healthy and label every fallback response."""
+        if self.failure_count < 2 or time.time() - self.last_failure_time >= 60.0:
+            try:
+                result = await self.primary.run_agent_turn(message, context)
+            except Exception:
+                self.failure_count += 1
+                self.last_failure_time = time.time()
+            else:
+                self.failure_count = 0
+                return result
+        result = await self.fallback.run_agent_turn(message, context)
+        result.degraded = True
+        result.provider_used = "gemini-fallback"
+        return result
