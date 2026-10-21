@@ -1,0 +1,543 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "FlowPilot",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/v1/sessions": {
+      "post": {
+        "summary": "Create Session",
+        "description": "Create a server-generated session and optionally seed its demo data.",
+        "operationId": "create_session_api_v1_sessions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/{sid}": {
+      "delete": {
+        "summary": "Reset Session",
+        "description": "Atomically clear and re-seed a session, allowing one reset per five seconds.",
+        "operationId": "reset_session_api_v1_sessions__sid__delete",
+        "parameters": [
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Sid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResetResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/{sid}/plans/{pid}": {
+      "get": {
+        "summary": "Get Plan",
+        "description": "Return persisted plan details.",
+        "operationId": "get_plan_api_v1_sessions__sid__plans__pid__get",
+        "parameters": [
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Sid"
+            }
+          },
+          {
+            "name": "pid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Pid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/{sid}/plans/{pid}/confirm": {
+      "post": {
+        "summary": "Confirm Plan",
+        "description": "Execute the registered commit implementation.",
+        "operationId": "confirm_plan_api_v1_sessions__sid__plans__pid__confirm_post",
+        "parameters": [
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Sid"
+            }
+          },
+          {
+            "name": "pid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Pid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/{sid}/plans/{pid}/cancel": {
+      "post": {
+        "summary": "Cancel Plan",
+        "description": "Cancel proposed plans without altering domain state.",
+        "operationId": "cancel_plan_api_v1_sessions__sid__plans__pid__cancel_post",
+        "parameters": [
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Sid"
+            }
+          },
+          {
+            "name": "pid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Pid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/{sid}/agent/message": {
+      "post": {
+        "summary": "Agent Message",
+        "description": "Run the deterministic provider against an existing session's real tools.",
+        "operationId": "agent_message_api_v1_sessions__sid__agent_message_post",
+        "parameters": [
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Sid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentMessageRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentMessageResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AgentMessageRequest": {
+        "properties": {
+          "message": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Message"
+          },
+          "state_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State Version"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "title": "AgentMessageRequest",
+        "description": "Validate an utterance and its optional client state version."
+      },
+      "AgentMessageResponse": {
+        "properties": {
+          "response": {
+            "type": "string",
+            "title": "Response"
+          },
+          "plan_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plan Id"
+          },
+          "has_proposal": {
+            "type": "boolean",
+            "title": "Has Proposal",
+            "default": false
+          },
+          "state_version": {
+            "type": "integer",
+            "title": "State Version",
+            "default": 1
+          },
+          "provider_used": {
+            "type": "string",
+            "title": "Provider Used",
+            "default": "deterministic"
+          },
+          "degraded": {
+            "type": "boolean",
+            "title": "Degraded",
+            "default": false
+          },
+          "tool_trace": {
+            "items": {
+              "$ref": "#/components/schemas/ToolTraceItem"
+            },
+            "type": "array",
+            "title": "Tool Trace"
+          }
+        },
+        "type": "object",
+        "required": [
+          "response"
+        ],
+        "title": "AgentMessageResponse",
+        "description": "Represent the documented AgentMessageResponse contract."
+      },
+      "ConfirmRequest": {
+        "properties": {
+          "state_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State Version"
+          }
+        },
+        "type": "object",
+        "title": "ConfirmRequest",
+        "description": "Accept an optional version defaulting to the proposal snapshot."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "SessionCreateRequest": {
+        "properties": {
+          "seed": {
+            "type": "boolean",
+            "title": "Seed",
+            "default": true
+          },
+          "demo_timestamp": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Demo Timestamp"
+          }
+        },
+        "type": "object",
+        "title": "SessionCreateRequest",
+        "description": "Represent the documented SessionCreateRequest contract."
+      },
+      "SessionResetResponse": {
+        "properties": {
+          "reset": {
+            "type": "boolean",
+            "title": "Reset"
+          },
+          "state_version": {
+            "type": "integer",
+            "title": "State Version"
+          }
+        },
+        "type": "object",
+        "required": [
+          "reset",
+          "state_version"
+        ],
+        "title": "SessionResetResponse",
+        "description": "Represent the documented SessionResetResponse contract."
+      },
+      "SessionResponse": {
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "title": "Session Id"
+          },
+          "state_version": {
+            "type": "integer",
+            "title": "State Version"
+          },
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "seeded": {
+            "type": "boolean",
+            "title": "Seeded"
+          }
+        },
+        "type": "object",
+        "required": [
+          "session_id",
+          "state_version",
+          "provider",
+          "seeded"
+        ],
+        "title": "SessionResponse",
+        "description": "Represent the documented SessionResponse contract."
+      },
+      "ToolTraceItem": {
+        "properties": {
+          "tool": {
+            "type": "string",
+            "title": "Tool"
+          },
+          "args": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Args"
+          },
+          "result_summary": {
+            "type": "string",
+            "title": "Result Summary"
+          },
+          "duration_ms": {
+            "type": "integer",
+            "title": "Duration Ms"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tool",
+          "args",
+          "result_summary",
+          "duration_ms"
+        ],
+        "title": "ToolTraceItem",
+        "description": "Represent the documented ToolTraceItem contract."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}
