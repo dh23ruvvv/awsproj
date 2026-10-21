@@ -91,4 +91,4 @@ _Gemini appends dated entries below as implementation proceeds._
 
 | Date | Decision | Rationale |
 |---|---|---|
-| — | — | — |
+| 2026-10-21 | AGENT_MODE: DIRECT | Codex CLI (`codex exec`) tested non-interactively with `--dangerously-bypass-approvals-and-sandbox`. Successfully created `handoff/codex_ping.txt` in 91ms and verified content. Automated CLI delegation verified. |

@@ -3,10 +3,10 @@
 ## STATE
 
 ```
-CURRENT_MILESTONE: M0 (Planning)
-LAST_VERIFIED_COMMIT: afd1862 (initial: add architecture handoff prompt)
+CURRENT_MILESTONE: M1 (Walking Skeleton)
+LAST_VERIFIED_COMMIT: e42524d (docs: architecture handoff)
 ACTIVE_LOCKS: none
-AGENT_MODE: PENDING_PREFLIGHT (run TASK-001 first)
+AGENT_MODE: DIRECT
 SCOPE_PROFILE: FULL (R ≈ 52h)
 ```
 
@@ -17,7 +17,7 @@ SCOPE_PROFILE: FULL (R ≈ 52h)
 - **OWNER:** GEMINI
 - **PRIORITY:** P0
 - **TRACK:** BUILD
-- **STATUS:** TODO
+- **STATUS:** DONE
 - **DEPENDS:** none
 - **FILES:** `handoff/codex_ping.txt`, `docs/09_DECISIONS.md`
 - **SPEC REFS:** `docs/05_AGENT_PROTOCOL.md` §1
