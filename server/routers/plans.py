@@ -18,7 +18,36 @@ class ConfirmRequest(BaseModel):
     state_version: int | None = None
 
 
-@router.get("/sessions/{sid}/plans/{pid}")
+class PlanResponse(BaseModel):
+    """Represent the documented Plan details response."""
+
+    plan_id: str
+    status: str
+    proposed_blocks: list[dict]
+    diff: dict | None = None
+    explanation: str | None = None
+    state_version_at_proposal: int
+    provider_used: str
+    degraded: bool
+
+
+class ConfirmResponse(BaseModel):
+    """Represent the documented Confirm plan response."""
+
+    committed: bool
+    state_version: int
+    already_executed: bool = False
+    execution_log: list[dict] | None = None
+
+
+class CancelResponse(BaseModel):
+    """Represent the documented Cancel plan response."""
+
+    cancelled: bool
+    state_version: int
+
+
+@router.get("/sessions/{sid}/plans/{pid}", response_model=PlanResponse)
 def get_plan(sid: str, pid: str):
     """Return persisted plan details."""
     db = get_connection()
@@ -36,7 +65,7 @@ def get_plan(sid: str, pid: str):
         db.close()
 
 
-@router.post("/sessions/{sid}/plans/{pid}/confirm")
+@router.post("/sessions/{sid}/plans/{pid}/confirm", response_model=ConfirmResponse, response_model_exclude_none=True)
 def confirm_plan(sid: str, pid: str, request: ConfirmRequest = Body(default_factory=ConfirmRequest)):
     """Execute the registered commit implementation."""
     db = get_connection()
@@ -51,7 +80,7 @@ def confirm_plan(sid: str, pid: str, request: ConfirmRequest = Body(default_fact
         db.close()
 
 
-@router.post("/sessions/{sid}/plans/{pid}/cancel")
+@router.post("/sessions/{sid}/plans/{pid}/cancel", response_model=CancelResponse)
 def cancel_plan(sid: str, pid: str):
     """Cancel proposed plans without altering domain state."""
     db = get_connection()
@@ -66,3 +95,4 @@ def cancel_plan(sid: str, pid: str):
         return JSONResponse(status_code=exc.status, content=exc.payload)
     finally:
         db.close()
+

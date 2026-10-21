@@ -114,7 +114,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/PlanResponse"
+                }
               }
             }
           },
@@ -170,7 +172,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ConfirmResponse"
+                }
               }
             }
           },
@@ -217,7 +221,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/CancelResponse"
+                }
               }
             }
           },
@@ -267,6 +273,166 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AgentMessageResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/{sid}/schedule": {
+      "get": {
+        "summary": "Get Schedule Data",
+        "description": "Return committed calendar blocks chronologically with their state version.",
+        "operationId": "get_schedule_data_api_v1_sessions__sid__schedule_get",
+        "parameters": [
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Sid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/{sid}/tasks": {
+      "get": {
+        "summary": "Get Tasks Data",
+        "description": "Return session tasks and state version.",
+        "operationId": "get_tasks_data_api_v1_sessions__sid__tasks_get",
+        "parameters": [
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Sid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TasksResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/{sid}/memory": {
+      "get": {
+        "summary": "Get Memory Data",
+        "description": "Return memory entries belonging to the session and state version.",
+        "operationId": "get_memory_data_api_v1_sessions__sid__memory_get",
+        "parameters": [
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Sid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemoryResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/{sid}/execution-log": {
+      "get": {
+        "summary": "Get Execution Log Data",
+        "description": "Return execution log entries for the session.",
+        "operationId": "get_execution_log_data_api_v1_sessions__sid__execution_log_get",
+        "parameters": [
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Sid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExecutionLogResponse"
                 }
               }
             }
@@ -366,6 +532,25 @@
         "title": "AgentMessageResponse",
         "description": "Represent the documented AgentMessageResponse contract."
       },
+      "CancelResponse": {
+        "properties": {
+          "cancelled": {
+            "type": "boolean",
+            "title": "Cancelled"
+          },
+          "state_version": {
+            "type": "integer",
+            "title": "State Version"
+          }
+        },
+        "type": "object",
+        "required": [
+          "cancelled",
+          "state_version"
+        ],
+        "title": "CancelResponse",
+        "description": "Represent the documented Cancel plan response."
+      },
       "ConfirmRequest": {
         "properties": {
           "state_version": {
@@ -384,6 +569,63 @@
         "title": "ConfirmRequest",
         "description": "Accept an optional version defaulting to the proposal snapshot."
       },
+      "ConfirmResponse": {
+        "properties": {
+          "committed": {
+            "type": "boolean",
+            "title": "Committed"
+          },
+          "state_version": {
+            "type": "integer",
+            "title": "State Version"
+          },
+          "already_executed": {
+            "type": "boolean",
+            "title": "Already Executed",
+            "default": false
+          },
+          "execution_log": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Execution Log"
+          }
+        },
+        "type": "object",
+        "required": [
+          "committed",
+          "state_version"
+        ],
+        "title": "ConfirmResponse",
+        "description": "Represent the documented Confirm plan response."
+      },
+      "ExecutionLogResponse": {
+        "properties": {
+          "entries": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Entries"
+          }
+        },
+        "type": "object",
+        "required": [
+          "entries"
+        ],
+        "title": "ExecutionLogResponse",
+        "description": "Represent execution log entries."
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -396,6 +638,118 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "MemoryResponse": {
+        "properties": {
+          "entries": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Entries"
+          },
+          "state_version": {
+            "type": "integer",
+            "title": "State Version"
+          }
+        },
+        "type": "object",
+        "required": [
+          "entries",
+          "state_version"
+        ],
+        "title": "MemoryResponse",
+        "description": "Represent stored memory entries and current state version."
+      },
+      "PlanResponse": {
+        "properties": {
+          "plan_id": {
+            "type": "string",
+            "title": "Plan Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "proposed_blocks": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Proposed Blocks"
+          },
+          "diff": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Diff"
+          },
+          "explanation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Explanation"
+          },
+          "state_version_at_proposal": {
+            "type": "integer",
+            "title": "State Version At Proposal"
+          },
+          "provider_used": {
+            "type": "string",
+            "title": "Provider Used"
+          },
+          "degraded": {
+            "type": "boolean",
+            "title": "Degraded"
+          }
+        },
+        "type": "object",
+        "required": [
+          "plan_id",
+          "status",
+          "proposed_blocks",
+          "state_version_at_proposal",
+          "provider_used",
+          "degraded"
+        ],
+        "title": "PlanResponse",
+        "description": "Represent the documented Plan details response."
+      },
+      "ScheduleResponse": {
+        "properties": {
+          "blocks": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Blocks"
+          },
+          "state_version": {
+            "type": "integer",
+            "title": "State Version"
+          }
+        },
+        "type": "object",
+        "required": [
+          "blocks",
+          "state_version"
+        ],
+        "title": "ScheduleResponse",
+        "description": "Represent committed schedule blocks and current state version."
       },
       "SessionCreateRequest": {
         "properties": {
@@ -467,6 +821,29 @@
         ],
         "title": "SessionResponse",
         "description": "Represent the documented SessionResponse contract."
+      },
+      "TasksResponse": {
+        "properties": {
+          "tasks": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Tasks"
+          },
+          "state_version": {
+            "type": "integer",
+            "title": "State Version"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tasks",
+          "state_version"
+        ],
+        "title": "TasksResponse",
+        "description": "Represent session tasks and current state version."
       },
       "ToolTraceItem": {
         "properties": {

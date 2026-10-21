@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from server.config import settings
 from server.database import init_db
-from server.routers import agent, plans, sessions
+from server.routers import agent, data, plans, sessions
 
 
 @asynccontextmanager
@@ -20,6 +20,7 @@ app = FastAPI(title="FlowPilot", lifespan=lifespan)
 app.include_router(sessions.router, prefix="/api/v1")
 app.include_router(plans.router, prefix="/api/v1")
 app.include_router(agent.router, prefix="/api/v1")
+app.include_router(data.router, prefix="/api/v1")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[origin.strip() for origin in settings.flowpilot_cors_origins.split(",") if origin.strip()],
