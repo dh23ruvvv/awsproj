@@ -4,7 +4,7 @@
 
 ```
 CURRENT_MILESTONE: M1 (Walking Skeleton)
-LAST_VERIFIED_COMMIT: e2cf08d (TASK-008: Implement scheduler engine and validator)
+LAST_VERIFIED_COMMIT: ca2d5dc (TASK-009: Implement PROPOSE tools (propose_schedule, propose_replan))
 ACTIVE_LOCKS: none
 AGENT_MODE: DIRECT
 SCOPE_PROFILE: FULL (R ≈ 52h)
@@ -205,7 +205,7 @@ SCOPE_PROFILE: FULL (R ≈ 52h)
 - **OWNER:** CODEX
 - **PRIORITY:** P0
 - **TRACK:** BUILD
-- **STATUS:** TODO
+- **STATUS:** DONE
 - **DEPENDS:** TASK-008
 - **FILES:** `server/tools/propose_tools.py`
 - **SPEC REFS:** `docs/02_ARCHITECTURE.md` §4
