@@ -4,7 +4,7 @@
 
 ```
 CURRENT_MILESTONE: M3 (Live Provider & Robustness)
-LAST_VERIFIED_COMMIT: 84716c9 (TASK-021: Implement Security Tests (injection, idempotency, stale plan))
+LAST_VERIFIED_COMMIT: a0ef36c (TASK-022: Implement static file serving and development scripts)
 ACTIVE_LOCKS: none
 AGENT_MODE: DIRECT
 SCOPE_PROFILE: FULL (R ≈ 52h)
@@ -517,7 +517,7 @@ SCOPE_PROFILE: FULL (R ≈ 52h)
 - **OWNER:** GEMINI
 - **PRIORITY:** P0
 - **TRACK:** BUILD
-- **STATUS:** TODO
+- **STATUS:** DONE
 - **DEPENDS:** TASK-019
 - **PARALLEL-SAFE-WITH:** TASK-020
 - **FILES:** `server/main.py` (static mount addition), `scripts/dev.ps1`, `scripts/seed.ps1`, `package.json` (root)
