@@ -69,13 +69,15 @@ export async function resetSession(sid: string): Promise<SessionResetResponse> {
 export async function sendMessage(
   sid: string,
   message: string,
-  stateVersion?: number | null
+  stateVersion?: number | null,
+  provider?: string | null
 ): Promise<AgentMessageResponse> {
   const body: AgentMessageRequest = {
     message,
     state_version: stateVersion,
   };
-  return request<AgentMessageResponse>(`/sessions/${encodeURIComponent(sid)}/agent/message`, {
+  const query = provider ? `?provider=${encodeURIComponent(provider)}` : "";
+  return request<AgentMessageResponse>(`/sessions/${encodeURIComponent(sid)}/agent/message${query}`, {
     method: "POST",
     body: JSON.stringify(body),
   });

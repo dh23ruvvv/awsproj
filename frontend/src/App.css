@@ -1,4 +1,4 @@
-﻿/* Ambient shell built on the shared FlowPilot design tokens. */
+/* Ambient shell built on the shared FlowPilot design tokens. */
 .ambient-app { max-width: 1480px; margin: 0 auto; padding: 2.5rem 3rem 1.5rem; }
 .app-header { display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; padding-bottom: 2rem; border-bottom: 1px solid var(--border-subtle); }
 .app-brand, .app-header-actions { display: flex; align-items: center; gap: 1rem; }
@@ -23,6 +23,15 @@
 .app-footer { text-align: center; color: var(--text-faint); font-size: .75rem; padding: .75rem; }
 .interaction-zone .memory-indicator { align-self: flex-start; max-width: 100%; overflow-wrap: anywhere; }
 .interaction-zone .tool-trace { margin-top: .25rem; }
+.demo-suggestions { display: flex; flex-direction: column; gap: .6rem; }
+.demo-suggestions__header { display: flex; align-items: center; justify-content: space-between; font-size: .75rem; color: #8fa5c5; text-transform: uppercase; letter-spacing: .12em; font-weight: 600; }
+.demo-suggestions__chips { display: flex; flex-wrap: wrap; gap: .55rem; }
+.demo-chip { display: inline-flex; align-items: center; gap: .45rem; padding: .45rem .85rem; border-radius: 999px; background: rgba(99, 102, 241, .12); border: 1px solid rgba(129, 140, 248, .28); color: #c7d2fe; font-size: .82rem; font-weight: 500; cursor: pointer; transition: all .15s ease-in-out; }
+.demo-chip:hover:not(:disabled) { background: rgba(99, 102, 241, .25); border-color: rgba(165, 180, 252, .6); color: #ffffff; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(99, 102, 241, .22); }
+.demo-chip:active:not(:disabled) { transform: translateY(0); }
+.demo-chip:disabled { opacity: .45; cursor: not-allowed; }
+.demo-chip strong { font-weight: 600; }
+.demo-suggestions__hint { font-size: .78rem; color: #94a3b8; font-style: italic; margin-top: .15rem; }
 @media (min-width: 1500px) { .ambient-app { padding-top: 3.5rem; } .ambient-layout { gap: 3.5rem; padding-top: 3.5rem; } }
 @media (max-width: 900px) { .ambient-app { padding: 1.5rem; } .app-header { flex-wrap: wrap; } .ambient-layout { grid-template-columns: 1fr; } .surface-intro h2 br { display: none; } }
 @media (max-width: 480px) { .ambient-app { padding: 1rem; } .app-header-actions { flex-wrap: wrap; gap: .75rem; } .schedule-zone { padding: 1rem; border-radius: 1rem; } .ambient-layout { padding-top: 1.25rem; gap: 1.5rem; } }

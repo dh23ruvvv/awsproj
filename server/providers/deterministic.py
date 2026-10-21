@@ -38,8 +38,8 @@ class DeterministicProvider:
             raise ValueError("Session does not exist")
         result = AgentTurnResult(response=FALLBACK_RESPONSE, state_version=row["state_version"], tool_trace=trace)
         text = message.lower()
-        planning = bool(re.search(r"\bplan\b", text))
-        replanning = bool(re.search(r"\b(replan|manager|interrupt\w*)\b|1-on-1", text))
+        replanning = bool(re.search(r"\b(replan|replanning|manager|interrupt\w*|reschedule)\b|1-on-1", text))
+        planning = not replanning and bool(re.search(r"\b(plan|planning|schedule|scheduling|organize|agenda)\b", text))
         if replanning:
             schedule = call(read_tools.get_schedule)
             clock = call(read_tools.get_current_time)["current_time"]
@@ -63,7 +63,7 @@ class DeterministicProvider:
             proposal = call(propose_tools.propose_schedule,
                             {"blocks": blocks, "explanation": PLAN_RESPONSE})
             result.response = PLAN_RESPONSE
-        elif re.search(r"\b(left|summary|status)\b", text):
+        elif re.search(r"\b(left|summary|status|remaining)\b", text):
             schedule = call(read_tools.get_schedule)
             clock = call(read_tools.get_current_time)["current_time"]
             call(read_tools.get_memory)

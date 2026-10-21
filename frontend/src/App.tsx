@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createSession, resetSession, sendMessage, getPlan, confirmPlan, cancelPlan, getSchedule, getMemory } from './api/client';
 import type { MemoryResponse, ToolTraceItem } from './api/client';
 import ScheduleTimeline from './components/ScheduleTimeline';
@@ -97,10 +97,15 @@ export default function App() {
     finally { busy.current = false; setLoading(false); }
   }
 
+  function handleToggleProvider() {
+    setProviderUsed(prev => prev === 'gemini' ? 'deterministic' : 'gemini');
+    setIsDegraded(false);
+  }
+
   /** Send an utterance and retrieve the proposal selected by the agent. */
   async function handleSendMessage(utterance: string) {
     await runAction(async () => {
-      const res = await sendMessage(sid, utterance, stateVersion);
+      const res = await sendMessage(sid, utterance, stateVersion, providerUsed);
       setAgentResponse(res.response);
       setProviderUsed(res.provider_used);
       setIsDegraded(res.degraded);
@@ -166,12 +171,50 @@ export default function App() {
     <div className="ambient-app">
       <header className="app-header">
         <div className="app-brand"><span className="app-orb" aria-hidden="true">✦</span><div><h1>FlowPilot</h1><p>Ambient AI Scheduling Assistant</p></div></div>
-        <div className="app-header-actions"><ModeBadge provider={providerUsed} degraded={isDegraded} /><button className="reset-demo" onClick={handleReset} disabled={!sid || initializing || loading}>Reset Demo</button></div>
+        <div className="app-header-actions">
+          <ModeBadge provider={providerUsed} degraded={isDegraded} onToggle={handleToggleProvider} />
+          <button className="reset-demo" onClick={handleReset} disabled={!sid || initializing || loading}>Reset Demo</button>
+        </div>
       </header>
       <main className="ambient-layout">
         <section className="interaction-zone" aria-labelledby="interaction-heading" aria-busy={initializing || loading}>
           <div className="surface-intro"><p className="eyebrow">A little clarity for your day</p><h2 id="interaction-heading">Make space for<br /><span>what matters.</span></h2><p>Plan your day. Adjust when life happens.</p></div>
           <UtteranceBar onSubmit={handleSendMessage} loading={loading} disabled={initializing || !sid} />
+          <div className="demo-suggestions" aria-label="Demo prompt suggestions">
+            <div className="demo-suggestions__header">
+              <span>Quick demo actions</span>
+              <span className="demo-suggestions__hint">Click any prompt to run:</span>
+            </div>
+            <div className="demo-suggestions__chips">
+              <button
+                type="button"
+                className="demo-chip"
+                disabled={loading || initializing}
+                onClick={() => handleSendMessage("Plan my day — finish the quarterly report by 5 PM and review the PR before the 2 PM meeting.")}
+              >
+                <span aria-hidden="true">🎯</span>
+                <strong>Plan my day</strong>
+              </button>
+              <button
+                type="button"
+                className="demo-chip"
+                disabled={loading || initializing}
+                onClick={() => handleSendMessage("My manager scheduled a 1-on-1 at 2 PM for 30 minutes — replan around it.")}
+              >
+                <span aria-hidden="true">⚡</span>
+                <strong>Replan: 2 PM 1-on-1</strong>
+              </button>
+              <button
+                type="button"
+                className="demo-chip"
+                disabled={loading || initializing}
+                onClick={() => handleSendMessage("What's left for today?")}
+              >
+                <span aria-hidden="true">📋</span>
+                <strong>What's left today?</strong>
+              </button>
+            </div>
+          </div>
           <ResponseLine text={initializing ? 'Connecting to your schedule…' : agentResponse} loading={loading} />
           {error && <div className="app-error" role="alert"><p>{error}</p>{!sid && <button onClick={() => { startup.current = null; setRetry(value => value + 1); }}>Retry connection</button>}</div>}
           <MemoryIndicator summary={memorySummary} />
