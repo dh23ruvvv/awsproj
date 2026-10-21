@@ -48,14 +48,13 @@ graph TB
 git clone <repo-url>
 cd flowpilot
 
-# Backend
-python -m venv venv
-venv\Scripts\activate
+# Install Python dependencies
 pip install -r requirements.txt
 
-# Frontend
+# Install frontend dependencies & build
 cd frontend
 npm install
+npm run build
 cd ..
 
 # Copy environment config
@@ -65,10 +64,10 @@ Copy-Item .env.example .env
 # Start both services
 npm run dev
 
-# Seed demo data (in another terminal)
+# In another terminal, seed demo data
 npm run seed
 
-# Open http://localhost:5173
+# Open http://localhost:5173 (dev) or http://localhost:8000 (single-process production mode)
 ```
 
 ## Modes
@@ -77,10 +76,11 @@ FlowPilot operates in two modes, always disclosed via a visible badge:
 
 | Mode | Badge Text | Description |
 |---|---|---|
-| **Deterministic** | "Deterministic demo mode" | Rule-based provider. Uses real scheduling engine against real DB state. No LLM calls. Default mode. |
-| **Live** | "Live model" | Gemini API reasoning with tool use. Falls back to deterministic with "fallback" badge on failure. |
+| **Deterministic** | "Deterministic demo mode" | Rule-based provider. Uses real scheduling engine against real DB state. No LLM calls. Always available offline. |
+| **Live** | "Live model (Gemini)" | Gemini API reasoning (`gemini-3.5-flash-lite`) using Google GenAI SDK with multi-tool execution. |
+| **Fallback** | "Deterministic fallback" | Circuit breaker (2 failures → 60s cooldown) smoothly falls back to deterministic with `degraded: true`. |
 
-The deterministic provider is never presented as autonomous AI reasoning. It executes the same tools and produces valid schedules, but follows predefined patterns rather than model inference.
+The deterministic provider is never presented as autonomous AI reasoning. It executes the same real tools and produces valid schedules against real database state.
 
 ## Track Alignment (Alexa+)
 
@@ -95,16 +95,16 @@ No production Alexa+ backend is used or claimed.
 ## Testing
 
 ```powershell
-# Full test suite
-python -m pytest tests/ -v
+# Full test suite (130 tests passing)
+npm test
 
 # Golden smoke test (deterministic + live invariants + fallback)
 npm run smoke
 
-# Contract integrity check
+# Contract integrity check (OpenAPI schema vs frontend TypeScript types)
 npm run contract:check
 
-# Security tests
+# Security tests (prompt injection, idempotency, stale plan rejection)
 python -m pytest tests/test_injection.py tests/test_idempotency.py tests/test_stale_plan.py -v
 ```
 
