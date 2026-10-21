@@ -4,7 +4,7 @@
 
 ```
 CURRENT_MILESTONE: M2 (Contract & Frontend Core)
-LAST_VERIFIED_COMMIT: 3514bef (TASK-013: Implement OpenAPI export and contract check script)
+LAST_VERIFIED_COMMIT: 9bc5903 (TASK-014: Implement Frontend Type Generation and API Client)
 ACTIVE_LOCKS: none
 AGENT_MODE: DIRECT
 SCOPE_PROFILE: FULL (R ≈ 52h)
@@ -324,7 +324,7 @@ SCOPE_PROFILE: FULL (R ≈ 52h)
 - **OWNER:** CODEX
 - **PRIORITY:** P0
 - **TRACK:** BUILD
-- **STATUS:** TODO
+- **STATUS:** DONE
 - **DEPENDS:** TASK-013
 - **PARALLEL-SAFE-WITH:** none
 - **FILES:** `frontend/src/api/types.ts`, `frontend/src/api/client.ts`, `frontend/package.json`
