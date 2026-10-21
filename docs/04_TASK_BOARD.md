@@ -4,7 +4,7 @@
 
 ```
 CURRENT_MILESTONE: M1 (Walking Skeleton)
-LAST_VERIFIED_COMMIT: 91da11f (TASK-004: Project Scaffolding - Backend)
+LAST_VERIFIED_COMMIT: 9d78e39 (TASK-005: Project Scaffolding - Frontend)
 ACTIVE_LOCKS: none
 AGENT_MODE: DIRECT
 SCOPE_PROFILE: FULL (R ≈ 52h)
@@ -106,7 +106,7 @@ SCOPE_PROFILE: FULL (R ≈ 52h)
 - **OWNER:** CODEX
 - **PRIORITY:** P0
 - **TRACK:** BUILD
-- **STATUS:** TODO
+- **STATUS:** DONE
 - **DEPENDS:** TASK-001
 - **PARALLEL-SAFE-WITH:** TASK-004
 - **FILES:** `frontend/` (all initial files)
