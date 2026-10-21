@@ -243,7 +243,7 @@
     "/api/v1/sessions/{sid}/agent/message": {
       "post": {
         "summary": "Agent Message",
-        "description": "Run the deterministic provider against an existing session's real tools.",
+        "description": "Run the selected provider against an existing session's real tools.",
         "operationId": "agent_message_api_v1_sessions__sid__agent_message_post",
         "parameters": [
           {
@@ -253,6 +253,38 @@
             "schema": {
               "type": "string",
               "title": "Sid"
+            }
+          },
+          {
+            "name": "provider",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Provider"
+            }
+          },
+          {
+            "name": "X-FlowPilot-Provider",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Flowpilot-Provider"
             }
           }
         ],

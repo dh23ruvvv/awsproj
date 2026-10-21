@@ -115,7 +115,7 @@ export interface paths {
         put?: never;
         /**
          * Agent Message
-         * @description Run the deterministic provider against an existing session's real tools.
+         * @description Run the selected provider against an existing session's real tools.
          */
         post: operations["agent_message_api_v1_sessions__sid__agent_message_post"];
         delete?: never;
@@ -605,8 +605,12 @@ export interface operations {
     };
     agent_message_api_v1_sessions__sid__agent_message_post: {
         parameters: {
-            query?: never;
-            header?: never;
+            query?: {
+                provider?: string | null;
+            };
+            header?: {
+                "X-FlowPilot-Provider"?: string | null;
+            };
             path: {
                 sid: string;
             };
