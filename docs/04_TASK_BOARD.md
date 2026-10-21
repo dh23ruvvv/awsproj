@@ -4,7 +4,7 @@
 
 ```
 CURRENT_MILESTONE: M1 (Walking Skeleton)
-LAST_VERIFIED_COMMIT: bf6ee31 (TASK-010: Implement Plan Router and Commit tool)
+LAST_VERIFIED_COMMIT: 5fce8aa (TASK-011: Implement Deterministic Provider)
 ACTIVE_LOCKS: none
 AGENT_MODE: DIRECT
 SCOPE_PROFILE: FULL (R ≈ 52h)
@@ -256,7 +256,7 @@ SCOPE_PROFILE: FULL (R ≈ 52h)
 - **OWNER:** CODEX
 - **PRIORITY:** P0
 - **TRACK:** BUILD
-- **STATUS:** TODO
+- **STATUS:** DONE
 - **DEPENDS:** TASK-010
 - **FILES:** `server/providers/__init__.py`, `server/providers/base.py`, `server/providers/deterministic.py`
 - **SPEC REFS:** `docs/02_ARCHITECTURE.md` §6.4, §7
