@@ -4,10 +4,10 @@
 
 ```
 CURRENT_MILESTONE: M4 (Demo Video & Submission)
-LAST_VERIFIED_COMMIT: 2d19a0d (TASK-023: Update README with quickstart, test commands, and live provider details)
+LAST_VERIFIED_COMMIT: 34d52c9 (fix(client,api): resolve JSON parse error with defensive client fetch, global 500 error envelopes, and validator block matching)
 ACTIVE_LOCKS: none
 AGENT_MODE: DIRECT
-SCOPE_PROFILE: FULL (R ≈ 52h)
+SCOPE_PROFILE: FULL (R ≈ 47h)
 ```
 
 ---
