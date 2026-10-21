@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 import jsonschema
+from server.tools.propose_tools import propose_schedule, propose_replan
 
 from server.tools.read_tools import (
     get_calendar, get_current_time, get_memory, get_schedule, get_tasks,
@@ -89,8 +90,8 @@ for _tool in (
     Tool("get_current_time", "READ", "Get current time (injectable)", _object_schema({}), get_current_time),
     Tool("get_schedule", "READ", "Get committed schedule", _object_schema({}), get_schedule),
     Tool("get_memory", "READ", "Retrieve stored memory entries", _object_schema({}), get_memory),
-    Tool("propose_schedule", "PROPOSE", "Propose a new day schedule", _proposal_schema("blocks")),
-    Tool("propose_replan", "PROPOSE", "Propose schedule changes after interruption", _proposal_schema("new_blocks")),
+    Tool("propose_schedule", "PROPOSE", "Propose a new day schedule", _proposal_schema("blocks"), propose_schedule),
+    Tool("propose_replan", "PROPOSE", "Propose schedule changes after interruption", _proposal_schema("new_blocks"), propose_replan),
     Tool("commit_schedule", "COMMIT", "Commit approved plan to schedule", _object_schema(
         {"plan_id": {"type": "string"}}, ["plan_id"],
     )),

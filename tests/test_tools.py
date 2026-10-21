@@ -10,15 +10,15 @@ from server.database import SCHEMA, get_connection, seed_session
 
 
 def test_default_tools() -> None:
-    """The singleton contains eight tools with handlers only for READ tools."""
+    """The singleton has executable READ and PROPOSE tools."""
     tools = default_registry.list_tools()
     assert len(tools) == 8
     assert {tool.name for tool in tools} == {
         "get_tasks", "get_calendar", "get_current_time", "get_schedule",
         "get_memory", "propose_schedule", "propose_replan", "commit_schedule",
     }
-    assert all(callable(tool.handler) for tool in tools if tool.tier == "READ")
-    assert all(tool.handler is None for tool in tools if tool.tier != "READ")
+    assert all(callable(tool.handler) for tool in tools if tool.tier in ("READ", "PROPOSE"))
+    assert all(tool.handler is None for tool in tools if tool.tier == "COMMIT")
 
 
 @pytest.mark.parametrize("tier,count", [("READ", 5), ("PROPOSE", 2), ("COMMIT", 1)])
