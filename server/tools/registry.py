@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 import jsonschema
+from server.tools.commit_tools import commit_schedule
 from server.tools.propose_tools import propose_schedule, propose_replan
 
 from server.tools.read_tools import (
@@ -94,6 +95,6 @@ for _tool in (
     Tool("propose_replan", "PROPOSE", "Propose schedule changes after interruption", _proposal_schema("new_blocks"), propose_replan),
     Tool("commit_schedule", "COMMIT", "Commit approved plan to schedule", _object_schema(
         {"plan_id": {"type": "string"}}, ["plan_id"],
-    )),
+    ), commit_schedule),
 ):
     default_registry.register(_tool)
