@@ -3,8 +3,8 @@
 ## STATE
 
 ```
-CURRENT_MILESTONE: M1 (Walking Skeleton)
-LAST_VERIFIED_COMMIT: 5fce8aa (TASK-011: Implement Deterministic Provider)
+CURRENT_MILESTONE: M2 (Contract & Frontend Core)
+LAST_VERIFIED_COMMIT: 2c0169f (TASK-012: Implement Agent Router and Loop Integration)
 ACTIVE_LOCKS: none
 AGENT_MODE: DIRECT
 SCOPE_PROFILE: FULL (R ≈ 52h)
@@ -279,7 +279,7 @@ SCOPE_PROFILE: FULL (R ≈ 52h)
 - **OWNER:** CODEX
 - **PRIORITY:** P0
 - **TRACK:** BUILD
-- **STATUS:** TODO
+- **STATUS:** DONE
 - **DEPENDS:** TASK-011
 - **FILES:** `server/routers/agent.py`
 - **SPEC REFS:** `docs/02_ARCHITECTURE.md` §5.2, §6.2
