@@ -1,0 +1,22 @@
+{
+  "name": "flowpilot",
+  "version": "1.0.0",
+  "description": "FlowPilot — Ambient AI Scheduling Agent",
+  "private": true,
+  "scripts": {
+    "dev": "powershell -ExecutionPolicy Bypass -File scripts/dev.ps1",
+    "seed": "powershell -ExecutionPolicy Bypass -File scripts/seed.ps1",
+    "smoke": "powershell -ExecutionPolicy Bypass -File scripts/smoke.ps1",
+    "contract:check": "powershell -ExecutionPolicy Bypass -File scripts/contract_check.ps1",
+    "test": "python -m pytest tests/",
+    "build": "npm --prefix frontend run build"
+  },
+  "keywords": [
+    "alexa-plus",
+    "agentic-ai",
+    "scheduling",
+    "ambient"
+  ],
+  "author": "FlowPilot Team",
+  "license": "Apache-2.0"
+}
