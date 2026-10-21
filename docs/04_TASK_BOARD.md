@@ -4,7 +4,7 @@
 
 ```
 CURRENT_MILESTONE: M3 (Live Provider & Robustness)
-LAST_VERIFIED_COMMIT: 4f2527e (TASK-019: Implement App Integration and Ambient Styling)
+LAST_VERIFIED_COMMIT: 1b77e5c (TASK-015: Implement Gemini Live Provider and Fallback Circuit Breaker)
 ACTIVE_LOCKS: none
 AGENT_MODE: DIRECT
 SCOPE_PROFILE: FULL (R ≈ 52h)
@@ -348,7 +348,7 @@ SCOPE_PROFILE: FULL (R ≈ 52h)
 - **OWNER:** CODEX
 - **PRIORITY:** P0
 - **TRACK:** BUILD
-- **STATUS:** TODO
+- **STATUS:** DONE
 - **DEPENDS:** TASK-012, TASK-002
 - **FILES:** `server/providers/gemini.py`, `server/providers/fallback.py`
 - **SPEC REFS:** `docs/02_ARCHITECTURE.md` §7.2, §7.1
