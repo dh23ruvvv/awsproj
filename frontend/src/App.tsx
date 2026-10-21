@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { createSession, resetSession, sendMessage, getPlan, confirmPlan, cancelPlan, getSchedule, getMemory } from './api/client';
+import { createSession, resetSession, sendMessage, getPlan, confirmPlan, cancelPlan, getSchedule, getMemory, getTasks } from './api/client';
 import type { MemoryResponse, ToolTraceItem } from './api/client';
 import ScheduleTimeline from './components/ScheduleTimeline';
 import type { ScheduleBlock } from './components/ScheduleTimeline';
+import TaskList from './components/TaskList';
+import type { TaskItem } from './components/TaskList';
 import PlanPreview from './components/PlanPreview';
 import type { DiffSummary } from './components/PlanPreview';
 import UtteranceBar from './components/UtteranceBar';
@@ -24,6 +26,18 @@ function scheduleBlocks(records: Record<string, unknown>[]): ScheduleBlock[] {
   });
 }
 
+function validateTasks(records: Record<string, unknown>[]): TaskItem[] {
+  return records.map(record => ({
+    id: String(record.id ?? ''),
+    title: String(record.title ?? ''),
+    duration_minutes: Number(record.duration_minutes ?? 0),
+    deadline: typeof record.deadline === 'string' ? record.deadline : null,
+    priority: typeof record.priority === 'string' ? record.priority : undefined,
+    category: typeof record.category === 'string' ? record.category : undefined,
+    status: typeof record.status === 'string' ? record.status : 'pending',
+  }));
+}
+
 /** Present structured API failures and network failures as readable feedback. */
 function errorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
@@ -39,6 +53,8 @@ export default function App() {
   const [sid, setSid] = useState('');
   const [stateVersion, setStateVersion] = useState(1);
   const [blocks, setBlocks] = useState<ScheduleBlock[]>([]);
+  const [tasks, setTasks] = useState<TaskItem[]>([]);
+  const [activeSidebarTab, setActiveSidebarTab] = useState<'timeline' | 'tasks'>('tasks');
   const [memory, setMemory] = useState<MemoryResponse['entries']>([]);
   const [agentResponse, setAgentResponse] = useState('Tell me what needs to happen. We will make room for it.');
   const [providerUsed, setProviderUsed] = useState('deterministic');
@@ -50,7 +66,13 @@ export default function App() {
   const [error, setError] = useState('');
   const [retry, setRetry] = useState(0);
   const busy = useRef(false);
-  const startup = useRef<Promise<{ sessionId: string; schedule: Awaited<ReturnType<typeof getSchedule>>; memories: MemoryResponse; provider?: string }> | null>(null);
+  const startup = useRef<Promise<{
+    sessionId: string;
+    schedule: Awaited<ReturnType<typeof getSchedule>>;
+    memories: MemoryResponse;
+    tasks: Record<string, unknown>[];
+    provider?: string;
+  }> | null>(null);
 
   useEffect(() => {
     let disposed = false;
@@ -61,15 +83,23 @@ export default function App() {
       let sessionId = localStorage.getItem('flowpilot_sid');
       if (sessionId) {
         try {
-          const [schedule, memories] = await Promise.all([getSchedule(sessionId), getMemory(sessionId)]);
-          return { sessionId, schedule, memories };
+          const [schedule, memories, taskData] = await Promise.all([
+            getSchedule(sessionId),
+            getMemory(sessionId),
+            getTasks(sessionId),
+          ]);
+          return { sessionId, schedule, memories, tasks: taskData.tasks };
         } catch { /* The handoff requires a fresh session when restoration fails. */ }
       }
       const session = await createSession(true);
       sessionId = session.session_id;
       localStorage.setItem('flowpilot_sid', sessionId);
-      const [schedule, memories] = await Promise.all([getSchedule(sessionId), getMemory(sessionId)]);
-      return { sessionId, schedule, memories, provider: session.provider };
+      const [schedule, memories, taskData] = await Promise.all([
+        getSchedule(sessionId),
+        getMemory(sessionId),
+        getTasks(sessionId),
+      ]);
+      return { sessionId, schedule, memories, tasks: taskData.tasks, provider: session.provider };
     }
     startup.current ??= initialize();
     startup.current.then(result => {
@@ -78,6 +108,7 @@ export default function App() {
       setSid(result.sessionId);
       setStateVersion(result.schedule.state_version);
       setMemory(result.memories.entries);
+      if (result.tasks) setTasks(validateTasks(result.tasks));
       if (result.provider) setProviderUsed(result.provider);
     }).catch(failure => {
       if (!disposed) setError(errorMessage(failure));
@@ -104,6 +135,11 @@ export default function App() {
 
   /** Send an utterance and retrieve the proposal selected by the agent. */
   async function handleSendMessage(utterance: string) {
+    if (/\b(left|tasks|pending|status|remaining|show tasks)\b/i.test(utterance)) {
+      setActiveSidebarTab('tasks');
+    } else if (/\b(plan|replan|schedule|timeline|calendar)\b/i.test(utterance)) {
+      setActiveSidebarTab('timeline');
+    }
     await runAction(async () => {
       const res = await sendMessage(sid, utterance, stateVersion, providerUsed);
       setAgentResponse(res.response);
@@ -116,6 +152,10 @@ export default function App() {
         const plan = await getPlan(sid, res.plan_id);
         setActivePlan({ planId: res.plan_id, diff: plan.diff ?? null, explanation: plan.explanation || res.response });
       }
+      try {
+        const updatedTasks = await getTasks(sid);
+        setTasks(validateTasks(updatedTasks.tasks));
+      } catch { /* retain existing */ }
     });
   }
 
@@ -132,6 +172,11 @@ export default function App() {
       setStateVersion(schedule.state_version);
       const memories = await getMemory(sid);
       setMemory(memories.entries);
+      try {
+        const updatedTasks = await getTasks(sid);
+        setTasks(validateTasks(updatedTasks.tasks));
+      } catch { /* retain existing */ }
+      setActiveSidebarTab('timeline');
     });
   }
 
@@ -158,6 +203,11 @@ export default function App() {
       const schedule = await getSchedule(sid);
       setBlocks(scheduleBlocks(schedule.blocks));
       setStateVersion(schedule.state_version);
+      try {
+        const updatedTasks = await getTasks(sid);
+        setTasks(validateTasks(updatedTasks.tasks));
+      } catch { /* retain existing */ }
+      setActiveSidebarTab('tasks');
     });
   }
 
@@ -221,7 +271,34 @@ export default function App() {
           <PlanPreview planId={activePlan?.planId} diff={activePlan?.diff} explanation={activePlan?.explanation} loading={loading || initializing} onConfirm={handleConfirmPlan} onCancel={handleCancelPlan} />
           <ToolTrace trace={toolTrace} />
         </section>
-        <aside className="schedule-zone" aria-label="Committed schedule"><p className="eyebrow">Your day, in focus</p><ScheduleTimeline blocks={blocks} /></aside>
+        <aside className="schedule-zone" aria-label="Committed schedule and tasks">
+          <p className="eyebrow">Your day, in focus</p>
+          <div className="zone-switcher" role="tablist" aria-label="View mode">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeSidebarTab === 'tasks'}
+              className={`zone-tab ${activeSidebarTab === 'tasks' ? 'zone-tab--active' : ''}`}
+              onClick={() => setActiveSidebarTab('tasks')}
+            >
+              📋 Tasks & What's Left ({tasks.length})
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeSidebarTab === 'timeline'}
+              className={`zone-tab ${activeSidebarTab === 'timeline' ? 'zone-tab--active' : ''}`}
+              onClick={() => setActiveSidebarTab('timeline')}
+            >
+              📅 Schedule Timeline ({blocks.length})
+            </button>
+          </div>
+          {activeSidebarTab === 'tasks' ? (
+            <TaskList tasks={tasks} onSelectTask={handleSendMessage} />
+          ) : (
+            <ScheduleTimeline blocks={blocks} />
+          )}
+        </aside>
       </main>
       <footer className="app-footer">A calmer day starts with a clear plan.</footer>
     </div>

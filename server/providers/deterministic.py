@@ -71,9 +71,14 @@ class DeterministicProvider:
             remaining = [block for block in schedule["blocks"]
                          if block.get("status") != "completed"
                          and datetime.fromisoformat(block["end_time"]) > now]
-            result.response = "Remaining today: " + "; ".join(
-                f"{block['title']} at {datetime.fromisoformat(block['start_time']).strftime('%I:%M %p').lstrip('0')}"
-                for block in remaining) + "." if remaining else "You have no remaining scheduled blocks today."
+            if remaining:
+                items = [
+                    f"- {block['title']} (at {datetime.fromisoformat(block['start_time']).strftime('%I:%M %p').lstrip('0')})"
+                    for block in remaining
+                ]
+                result.response = "Remaining today:\n" + "\n".join(items)
+            else:
+                result.response = "You have no remaining scheduled blocks today."
             return result
         else:
             return result

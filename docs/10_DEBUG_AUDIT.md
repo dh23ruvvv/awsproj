@@ -112,3 +112,34 @@
 - **Regression Test:** `tests/test_golden_smoke.py`, `tests/test_gemini_provider.py`
 - **Verification Result:** PASSED (134/134 pytest passing; golden smoke passing)
 - **Relevant Commit:** `0aab430`
+
+---
+
+### BUG-004: Assistant Responses Dump Tasks into Unformatted Run-on Sentence and UI Lacked List View for Remaining Tasks
+
+- **BUG ID:** BUG-004
+- **Severity:** HIGH
+- **Affected Component:** `server/providers/gemini.py`, `server/providers/deterministic.py`, `frontend/src/components/ResponseLine.tsx`, `frontend/src/components/TaskList.tsx`, & `frontend/src/App.tsx`
+- **Reproduction Procedure:**
+  1. Ask assistant: "What is left today?" or "What tasks are left?".
+  2. The LLM prompt instructed: *"Respond in one or two sentences."*
+  3. The model dumped: `"You have five pending tasks for today: Quarterly report draft, Review PR #247, Grocery shopping, Team standup, and Gym session."` as a single plain paragraph in `ResponseLine`.
+  4. The right sidebar only showed the calendar timeline without a list view of pending tasks and what's left.
+- **Actual Behavior:**
+  - Tasks were cramped into a single unreadable sentence; user had no clear list view of pending tasks, deadlines, priorities, or remaining items.
+- **Expected Behavior:**
+  - Assistant responds with structured, itemized bulleted task lists with times and statuses.
+  - UI `ResponseLine` parses list responses and renders attractive task cards with icons and tags.
+  - UI sidebar provides a tabbed "Tasks & What's Left" list view with priority, duration, deadline, and one-click scheduling.
+- **Root Cause:**
+  - Prompt forced one or two sentences; ResponseLine lacked structured list parser; frontend lacked dedicated TaskList view component.
+- **Responsible Agent:** Gemini
+- **Repair Status:** RESOLVED
+- **Fix Details:**
+  1. Updated `gemini.py` and `deterministic.py` to format task queries as clean bulleted lists.
+  2. Updated `ResponseLine.tsx` and `ResponseLine.css` to intelligently parse markdown/inline lists and render them as modern task cards.
+  3. Created `TaskList.tsx` and `TaskList.css` with pending/scheduled filter pills, priority/deadline badges, and quick scheduling actions.
+  4. Added tab switcher in `App.tsx` between `Schedule Timeline` and `Tasks & What's Left`.
+- **Regression Test:** `tests/test_deterministic.py`, `tests/test_golden_smoke.py`, frontend production build
+- **Verification Result:** PASSED (134/134 pytest passing; smoke tests clean; `tsc --noEmit && vite build` clean)
+- **Relevant Commit:** Pending commit

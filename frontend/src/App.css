@@ -17,7 +17,11 @@
 .surface-intro h2 span { color: #a5b4fc; }
 .surface-intro > p:last-child { color: var(--text-muted); font-size: .95rem; }
 .schedule-zone { min-width: 0; padding: 1.5rem; background: linear-gradient(145deg, #172237a8, #0f172a99); border: 1px solid #b8c9ed15; border-radius: 1.5rem; box-shadow: 0 20px 70px #00000024, inset 0 1px 0 #ffffff05; backdrop-filter: blur(20px); }
-.schedule-zone > .eyebrow { margin: .25rem .25rem 1.25rem; }
+.schedule-zone > .eyebrow { margin: .25rem .25rem 1rem; }
+.zone-switcher { display: flex; gap: .5rem; background: rgba(15, 23, 42, .45); padding: .3rem; border-radius: .75rem; border: 1px solid rgba(148, 163, 184, .12); margin-bottom: 1.25rem; }
+.zone-tab { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: .45rem; background: transparent; border: none; color: #94a3b8; padding: .55rem .8rem; font-size: .85rem; font-weight: 500; border-radius: .55rem; cursor: pointer; transition: all .15s ease-in-out; }
+.zone-tab:hover { color: #f1f5f9; background: rgba(255, 255, 255, .05); }
+.zone-tab--active { background: rgba(99, 102, 241, .28); color: #ffffff; font-weight: 600; box-shadow: 0 2px 8px rgba(99, 102, 241, .25); border: 1px solid rgba(165, 180, 252, .3); }
 .app-error { border: 1px solid #fb71854d; background: #fb718510; padding: 1rem; border-radius: .8rem; color: #fecdd3; overflow-wrap: anywhere; }
 .app-error button { margin-top: .75rem; }
 .app-footer { text-align: center; color: var(--text-faint); font-size: .75rem; padding: .75rem; }
