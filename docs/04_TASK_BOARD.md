@@ -4,7 +4,7 @@
 
 ```
 CURRENT_MILESTONE: M1 (Walking Skeleton)
-LAST_VERIFIED_COMMIT: ca2d5dc (TASK-009: Implement PROPOSE tools (propose_schedule, propose_replan))
+LAST_VERIFIED_COMMIT: bf6ee31 (TASK-010: Implement Plan Router and Commit tool)
 ACTIVE_LOCKS: none
 AGENT_MODE: DIRECT
 SCOPE_PROFILE: FULL (R ≈ 52h)
@@ -229,7 +229,7 @@ SCOPE_PROFILE: FULL (R ≈ 52h)
 - **OWNER:** CODEX
 - **PRIORITY:** P0
 - **TRACK:** BUILD
-- **STATUS:** TODO
+- **STATUS:** DONE
 - **DEPENDS:** TASK-009
 - **FILES:** `server/routers/plans.py`
 - **SPEC REFS:** `docs/02_ARCHITECTURE.md` §5.3, §6.1
