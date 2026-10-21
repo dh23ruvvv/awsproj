@@ -1,0 +1,68 @@
+{
+  "demo_timestamp": "2026-10-22T09:00:00+05:30",
+  "tasks": [
+    {
+      "id": "T1",
+      "title": "Quarterly report draft",
+      "duration_minutes": 120,
+      "deadline": "2026-10-22T17:00:00+05:30",
+      "priority": "HIGH",
+      "category": "work",
+      "status": "pending"
+    },
+    {
+      "id": "T2",
+      "title": "Review PR #247",
+      "duration_minutes": 45,
+      "deadline": "2026-10-22T14:00:00+05:30",
+      "priority": "MEDIUM",
+      "category": "work",
+      "status": "pending"
+    },
+    {
+      "id": "T3",
+      "title": "Grocery shopping",
+      "duration_minutes": 60,
+      "deadline": "2026-10-22T20:00:00+05:30",
+      "priority": "LOW",
+      "category": "personal",
+      "status": "pending"
+    },
+    {
+      "id": "T4",
+      "title": "Team standup",
+      "duration_minutes": 30,
+      "deadline": null,
+      "priority": "HIGH",
+      "category": "meeting",
+      "status": "pending"
+    },
+    {
+      "id": "T5",
+      "title": "Gym session",
+      "duration_minutes": 60,
+      "deadline": null,
+      "priority": "MEDIUM",
+      "category": "personal",
+      "status": "pending"
+    }
+  ],
+  "calendar_blocks": [
+    {
+      "title": "Team standup",
+      "start_time": "2026-10-22T10:00:00+05:30",
+      "end_time": "2026-10-22T10:30:00+05:30",
+      "task_id": "T4",
+      "immutable": 1,
+      "status": "scheduled"
+    },
+    {
+      "title": "Lunch",
+      "start_time": "2026-10-22T13:00:00+05:30",
+      "end_time": "2026-10-22T14:00:00+05:30",
+      "task_id": null,
+      "immutable": 1,
+      "status": "scheduled"
+    }
+  ]
+}
