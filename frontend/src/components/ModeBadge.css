@@ -1,0 +1,7 @@
+.mode-badge { --mode-color: #a5b4fc; display: inline-flex; align-items: center; gap: .5rem; max-width: 100%; box-sizing: border-box; padding: .4rem .75rem; border: 1px solid var(--mode-color); border-radius: 999px; background: rgba(15, 23, 42, .9); color: var(--mode-color); font-size: .8rem; line-height: 1.4; overflow-wrap: anywhere; }
+.mode-badge--live { --mode-color: #6ee7b7; }
+.mode-badge--fallback { --mode-color: #fcd34d; }
+.mode-badge__dot { flex: 0 0 .45rem; height: .45rem; border-radius: 50%; background: var(--mode-color); }
+.mode-badge--live .mode-badge__dot { animation: mode-pulse 2s ease-in-out infinite; }
+@keyframes mode-pulse { 50% { box-shadow: 0 0 0 4px rgba(110, 231, 183, .15); opacity: .65; } }
+@media (prefers-reduced-motion: reduce) { .mode-badge--live .mode-badge__dot { animation: none; } }

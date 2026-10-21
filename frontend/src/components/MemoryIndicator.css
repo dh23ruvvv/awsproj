@@ -1,0 +1,4 @@
+.memory-indicator { display: inline-flex; align-items: baseline; gap: .5rem; max-width: 100%; box-sizing: border-box; padding: .5rem .85rem; border: 1px solid rgba(110, 231, 183, .3); border-radius: 1rem; background: rgba(16, 185, 129, .09); color: #a7f3d0; font-size: .85rem; line-height: 1.5; overflow-wrap: anywhere; animation: memory-enter .3s ease-out both; }
+.memory-indicator > span:last-child { min-width: 0; }
+@keyframes memory-enter { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { .memory-indicator { animation: none; } }

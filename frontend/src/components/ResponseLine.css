@@ -1,0 +1,5 @@
+.response-line { margin: 0; padding: 1rem 0; color: #e2e8f0; font-size: clamp(1.1rem, 2.5vw, 1.45rem); line-height: 1.65; white-space: pre-wrap; overflow-wrap: anywhere; }
+.response-line--loading { color: #a5b4fc; }
+.response-line__pulse { display: inline-block; width: .5rem; height: .5rem; margin-right: .7rem; border-radius: 50%; background: #818cf8; animation: response-pulse 1.5s ease-in-out infinite; }
+@keyframes response-pulse { 50% { opacity: .3; transform: scale(.75); } }
+@media (prefers-reduced-motion: reduce) { .response-line__pulse { animation: none; } }
