@@ -3,8 +3,8 @@
 ## STATE
 
 ```
-CURRENT_MILESTONE: M3 (Live Provider & Robustness)
-LAST_VERIFIED_COMMIT: a5552e0 (TASK-023: Update README with quickstart, test commands, and live provider details)
+CURRENT_MILESTONE: M4 (Demo Video & Submission)
+LAST_VERIFIED_COMMIT: 2d19a0d (TASK-023: Update README with quickstart, test commands, and live provider details)
 ACTIVE_LOCKS: none
 AGENT_MODE: DIRECT
 SCOPE_PROFILE: FULL (R ≈ 52h)
@@ -633,7 +633,7 @@ SCOPE_PROFILE: FULL (R ≈ 52h)
 - **OWNER:** GEMINI
 - **PRIORITY:** P0
 - **TRACK:** SUBMIT
-- **STATUS:** TODO
+- **STATUS:** DONE
 - **DEPENDS:** TASK-021, TASK-023
 - **FILES:** repo audit results
 - **SPEC REFS:** `docs/06_TEST_DEMO_SUBMISSION.md` pre-submission audit
