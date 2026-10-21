@@ -4,7 +4,7 @@
 
 ```
 CURRENT_MILESTONE: M2 (Contract & Frontend Core)
-LAST_VERIFIED_COMMIT: 9bc5903 (TASK-014: Implement Frontend Type Generation and API Client)
+LAST_VERIFIED_COMMIT: a41fa33 (TASK-016: Implement Schedule Timeline Component)
 ACTIVE_LOCKS: none
 AGENT_MODE: DIRECT
 SCOPE_PROFILE: FULL (R ≈ 52h)
@@ -372,7 +372,7 @@ SCOPE_PROFILE: FULL (R ≈ 52h)
 - **OWNER:** CODEX
 - **PRIORITY:** P0
 - **TRACK:** BUILD
-- **STATUS:** TODO
+- **STATUS:** DONE
 - **DEPENDS:** TASK-014
 - **PARALLEL-SAFE-WITH:** TASK-017, TASK-018
 - **FILES:** `frontend/src/components/ScheduleTimeline.tsx`, `frontend/src/components/ScheduleTimeline.css`
