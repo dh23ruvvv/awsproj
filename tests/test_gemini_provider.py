@@ -199,12 +199,12 @@ def test_router_selection_and_shared_breaker(tmp_path, monkeypatch):
             assert client.post(url + "?provider=gemini", json={"message": "hello"}).json()["degraded"]
             monkeypatch.setattr(settings, "gemini_api_key", None)
             monkeypatch.delenv("GEMINI_API_KEY", raising=False)
-            assert client.post(url + "?provider=gemini", json={"message": "hello"}).json()["provider_used"] == "deterministic"
+            assert client.post(url + "?provider=gemini", json={"message": "hello"}).json()["provider_used"] == "gemini-fallback"
     finally:
         agent._live_provider.cache_clear()
 
 
-@pytest.mark.skipif(not (settings.gemini_api_key or os.getenv("GEMINI_API_KEY")), reason="GEMINI_API_KEY is absent")
+@pytest.mark.skipif(os.getenv("FLOWPILOT_RUN_LIVE_TESTS") != "1" or not (settings.gemini_api_key or os.getenv("GEMINI_API_KEY")), reason="Live API calls require FLOWPILOT_RUN_LIVE_TESTS=1 and a key")
 def test_live_gemini(context):
     """Use real inference and require a real read tool call when a key is supplied."""
     result = asyncio.run(GeminiProvider().run_agent_turn(

@@ -13,8 +13,10 @@ export interface TaskItem {
 
 export interface TaskListProps {
   tasks: TaskItem[];
-  onSelectTask?: (taskTitle: string) => void;
   className?: string;
+  disabled?: boolean;
+  onEdit?: (task: TaskItem) => void;
+  onDelete?: (task: TaskItem) => void;
 }
 
 function formatTime(isoString?: string | null): string | null {
@@ -40,15 +42,15 @@ function getTaskIcon(title: string, category?: string): string {
   return '📌';
 }
 
-export function TaskList({ tasks, onSelectTask, className = '' }: TaskListProps) {
+export function TaskList({ tasks, onEdit, onDelete, disabled, className = '' }: TaskListProps) {
   const [filter, setFilter] = useState<'all' | 'pending' | 'scheduled'>('all');
 
   const pendingCount = tasks.filter(t => t.status === 'pending').length;
-  const scheduledCount = tasks.filter(t => t.status !== 'pending').length;
+  const scheduledCount = tasks.filter(t => t.status === 'scheduled').length;
 
   const filteredTasks = tasks.filter(t => {
     if (filter === 'pending') return t.status === 'pending';
-    if (filter === 'scheduled') return t.status !== 'pending';
+    if (filter === 'scheduled') return t.status === 'scheduled';
     return true;
   });
 
@@ -56,7 +58,7 @@ export function TaskList({ tasks, onSelectTask, className = '' }: TaskListProps)
     <div className={`task-list-view ${className}`} role="region" aria-label="Tasks and remaining items">
       <header className="task-list-view__header">
         <div className="task-list-view__title-row">
-          <h2>Tasks & What's Left</h2>
+          <h2>Your tasks</h2>
           <span className="task-list-view__badge">{pendingCount} pending</span>
         </div>
         <div className="task-list-view__filters" role="tablist" aria-label="Filter tasks">
@@ -130,16 +132,10 @@ export function TaskList({ tasks, onSelectTask, className = '' }: TaskListProps)
                   </div>
                 </div>
 
-                {onSelectTask && isPending && (
-                  <button
-                    type="button"
-                    className="task-item__action"
-                    title={`Ask FlowPilot to schedule "${task.title}"`}
-                    onClick={() => onSelectTask(`Please schedule "${task.title}" today.`)}
-                  >
-                    Schedule
-                  </button>
-                )}
+                {isPending && <div className="task-item__controls">
+                  {onEdit && <button type="button" disabled={disabled} onClick={() => onEdit(task)} aria-label={`Edit ${task.title}`}>Edit</button>}
+                  {onDelete && <button type="button" disabled={disabled} onClick={() => onDelete(task)} aria-label={`Remove ${task.title}`}>Remove</button>}
+                </div>}
               </li>
             );
           })}

@@ -9,9 +9,43 @@ from server.engine.scheduler import compute_day_schedule, compute_replan
 from server.tools import read_tools, propose_tools
 from .base import AgentContext, AgentTurnResult, ToolTraceItem
 
-PLAN_RESPONSE = "Here's your day — I've split the report into three blocks to hit your 5 PM deadline and scheduled the PR review before 2 PM."
-REPLAN_RESPONSE = "Report still finishes by 5 PM. Grocery pushed 15 min. Buffer shortened."
-FALLBACK_RESPONSE = "I can help you plan your day, replan around unexpected interruptions, or check what tasks are left. What would you like to do?"
+PLAN_RESPONSE = "I prepared a proposal from your saved tasks and calendar. Review the changes, then confirm to save them."
+REPLAN_RESPONSE = "I prepared a proposal around your interruption, preserving protected commitments. Review the changes, then confirm to save them."
+FALLBACK_RESPONSE = "Deterministic mode supports 'Plan my day', 'What's left?', and interruptions such as 'Replan around a meeting from 2:00 to 2:45 PM'. Add or edit tasks using the task controls."
+
+_CLOCK = r"(\d{1,2})(?::(\d{2}))?\s*(am|pm)?"
+
+
+def _interruption(message: str, now: datetime) -> dict:
+    """Parse one same-day interval; never guess missing times or dates."""
+    if re.search(r"\b(tomorrow|yesterday|next|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b|\d{4}-\d{2}-\d{2}|\b(?:utc|gmt|pst|pdt|ist|est|edt)\b", message):
+        raise ValueError("Deterministic mode accepts times today in the session timezone only.")
+    ranges = list(re.finditer(r"\bfrom\s+" + _CLOCK + r"\s*(?:to|until|[-–])\s*" + _CLOCK + r"\b", message))
+    durations = list(re.finditer(r"\bat\s+" + _CLOCK + r"\s+for\s+(\d+)\s*(minutes?|mins?)\b", message))
+    if len(ranges) + len(durations) != 1:
+        raise ValueError("Give one interruption with explicit times, for example: 'Replan around a meeting from 2:00 to 2:45 PM'.")
+
+    def clock(hour, minute, meridiem):
+        hour, minute = int(hour), int(minute or 0)
+        if minute > 59 or (meridiem and not 1 <= hour <= 12) or (not meridiem and not 0 <= hour <= 23):
+            raise ValueError("Please use valid clock times, for example 2:00 PM to 2:45 PM.")
+        if meridiem:
+            hour = hour % 12 + (12 if meridiem == "pm" else 0)
+        return now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+
+    if ranges:
+        h1, m1, ap1, h2, m2, ap2 = ranges[0].groups()
+        # A trailing AM/PM applies to both ends (2:00 to 2:45 PM).
+        start = clock(h1, m1, ap1 or ap2)
+        end = clock(h2, m2, ap2 or ap1)
+    else:
+        hour, minute, meridiem, duration, _ = durations[0].groups()
+        start = clock(hour, minute, meridiem)
+        end = start + timedelta(minutes=int(duration))
+    if start < now or end <= start or end.date() != now.date():
+        raise ValueError("The interruption must start today at or after the current time and end after it on the same day.")
+    title = "Manager 1-on-1" if "manager" in message or "1-on-1" in message else "Unexpected meeting"
+    return dict(title=title, start_time=start.isoformat(), end_time=end.isoformat(), immutable=True)
 
 
 class DeterministicProvider:
@@ -38,30 +72,35 @@ class DeterministicProvider:
             raise ValueError("Session does not exist")
         result = AgentTurnResult(response=FALLBACK_RESPONSE, state_version=row["state_version"], tool_trace=trace)
         text = message.lower()
-        replanning = bool(re.search(r"\b(replan|replanning|manager|interrupt\w*|reschedule)\b|1-on-1", text))
+        replanning = bool(re.search(r"\b(replan|replanning|rework|manager|interrupt\w*|reschedule)\b|1-on-1", text))
         planning = not replanning and bool(re.search(r"\b(plan|planning|schedule|scheduling|organize|agenda)\b", text))
         if replanning:
             schedule = call(read_tools.get_schedule)
             clock = call(read_tools.get_current_time)["current_time"]
             now = datetime.fromisoformat(context.current_time or clock)
-            start = now.replace(hour=14, minute=0, second=0, microsecond=0)
-            interruption = dict(title="Manager 1-on-1", start_time=start.isoformat(),
-                                end_time=(start + timedelta(minutes=30)).isoformat(), immutable=True)
-            blocks = compute_replan(schedule["blocks"], interruption, now.isoformat())
-            # The proposal validator protects all elapsed committed blocks.
-            blocks.extend(block for block in schedule["blocks"] if block["title"] == "Planning"
-                          and datetime.fromisoformat(block["end_time"]) <= now)
-            blocks.sort(key=lambda block: block["start_time"])
-            proposal = call(propose_tools.propose_replan,
-                            {"new_blocks": blocks, "explanation": REPLAN_RESPONSE})
+            try:
+                interruption = _interruption(text, now)
+                blocks = compute_replan(schedule["blocks"], interruption, now.isoformat())
+                proposal = call(propose_tools.propose_replan,
+                                {"new_blocks": blocks, "explanation": REPLAN_RESPONSE})
+            except ValueError as exc:
+                result.response = f"I could not prepare a proposal: {exc} Your saved calendar is unchanged."
+                return result
             result.response = REPLAN_RESPONSE
         elif planning:
+            if not re.fullmatch(r"\s*(?:please\s+)?(?:plan|schedule|organize)\s+(?:my|the)\s+day[.!?]?\s*", text):
+                result.response = "Deterministic mode plans saved tasks only. Add or edit task durations, priorities and deadlines using the task controls, then say 'Plan my day'. For an interruption, give an explicit range such as 'Replan from 2:00 to 2:45 PM'."
+                return result
             tasks = call(read_tools.get_tasks)["tasks"]
             calendar = call(read_tools.get_calendar)["blocks"]
             clock = call(read_tools.get_current_time)["current_time"]
-            blocks = compute_day_schedule(tasks, calendar, context.current_time or clock)
-            proposal = call(propose_tools.propose_schedule,
-                            {"blocks": blocks, "explanation": PLAN_RESPONSE})
+            try:
+                blocks = compute_day_schedule(tasks, calendar, context.current_time or clock)
+                proposal = call(propose_tools.propose_schedule,
+                                {"blocks": blocks, "explanation": PLAN_RESPONSE})
+            except ValueError as exc:
+                result.response = f"I could not fit the requested work: {exc} Adjust your tasks or availability and try again. Your saved calendar is unchanged."
+                return result
             result.response = PLAN_RESPONSE
         elif re.search(r"\b(left|summary|status|remaining)\b", text):
             schedule = call(read_tools.get_schedule)

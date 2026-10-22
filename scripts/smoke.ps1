@@ -5,7 +5,7 @@ Write-Host "`n===============================================" -ForegroundColor 
 Write-Host " Running FlowPilot Golden Smoke Test..." -ForegroundColor Cyan
 Write-Host "===============================================`n" -ForegroundColor Cyan
 
-python -m pytest tests/test_golden_smoke.py -v
+python -m pytest tests/test_golden_smoke.py -v -p no:cacheprovider --basetemp .test-tmp-smoke
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Golden Smoke Test FAILED"
     exit 1

@@ -6,6 +6,8 @@ from time import perf_counter
 from uuid import uuid4
 
 from server.clock import now
+from server.engine.validator import validate_schedule, inherit_block_metadata
+from server.engine.task_validation import validate_task_allocations
 
 
 class PlanError(Exception):
@@ -66,6 +68,13 @@ def _commit(sid, args, db, owned):
     db.execute("SAVEPOINT commit_domain")
     try:
         blocks = json.loads(plan["proposed_blocks"])
+        existing = [dict(row) for row in db.execute("SELECT * FROM calendar_blocks WHERE session_id=?", (sid,))]
+        blocks = inherit_block_metadata(blocks, existing)
+        errors = validate_schedule(blocks, existing, timestamp)
+        if not errors:
+            errors = validate_task_allocations(db, sid, blocks)
+        if errors:
+            raise ValueError("; ".join(errors))
         db.execute("UPDATE plans SET status='CONFIRMED', confirmed_at=? WHERE id=?", (timestamp, pid))
         db.execute("UPDATE plans SET status='EXECUTING' WHERE id=?", (pid,))
         retained = set()
@@ -73,8 +82,24 @@ def _commit(sid, args, db, owned):
             task = block.get("task_id")
             if task and db.execute("SELECT 1 FROM tasks WHERE id=? AND session_id=?", (task, sid)).fetchone() is None:
                 raise ValueError("Task does not belong to session")
-            bid = block.get("id") or str(uuid4())
-            old = db.execute("SELECT * FROM calendar_blocks WHERE id=?", (bid,)).fetchone()
+            bid = block.get("id")
+            old = None
+            if bid:
+                old = db.execute("SELECT * FROM calendar_blocks WHERE id=?", (bid,)).fetchone()
+            else:
+                if task:
+                    query = f"SELECT * FROM calendar_blocks WHERE session_id=? AND task_id=?" + (
+                        f" AND id NOT IN ({','.join('?' * len(retained))})" if retained else ""
+                    )
+                    params = (sid, task, *retained) if retained else (sid, task)
+                    old = db.execute(query, params).fetchone()
+                if old is None and block.get("title"):
+                    query = f"SELECT * FROM calendar_blocks WHERE session_id=? AND title=?" + (
+                        f" AND id NOT IN ({','.join('?' * len(retained))})" if retained else ""
+                    )
+                    params = (sid, block["title"], *retained) if retained else (sid, block["title"])
+                    old = db.execute(query, params).fetchone()
+                bid = old["id"] if old is not None else str(uuid4())
             if old is not None and old["session_id"] != sid:
                 raise ValueError("Block does not belong to session")
             retained.add(bid)
@@ -93,13 +118,7 @@ def _commit(sid, args, db, owned):
         for row in db.execute("SELECT id FROM calendar_blocks WHERE session_id=? AND status != 'completed'", (sid,)).fetchall():
             if row["id"] not in retained:
                 db.execute("DELETE FROM calendar_blocks WHERE id=? AND session_id=?", (row["id"], sid))
-        text = " ".join([plan["explanation"] or "", *(b["title"] for b in blocks)]).lower()
-        manager = "manager" in text or "1-on-1" in text
-        key = "manager_meeting" if manager else "work_style"
-        value = "Manager 1-on-1 typically 30 min, schedule for unexpected" if manager else "User prefers morning focus blocks for reports"
-        memory = db.execute("SELECT id FROM memory WHERE session_id=? AND key=?", (sid, key)).fetchone()
-        db.execute("INSERT OR REPLACE INTO memory (id,session_id,key,value,created_at) VALUES (?,?,?,?,?)",
-                   (memory["id"] if memory else str(uuid4()), sid, key, value, timestamp))
+        db.execute("UPDATE tasks SET status='pending' WHERE session_id=? AND status='scheduled' AND NOT EXISTS (SELECT 1 FROM calendar_blocks WHERE calendar_blocks.task_id=tasks.id)", (sid,))
         db.execute("UPDATE sessions SET state_version=state_version+1 WHERE id=?", (sid,))
         db.execute("UPDATE plans SET status='EXECUTED',executed_at=? WHERE id=?", (timestamp, pid))
         result = {"committed": True, "state_version": version + 1}

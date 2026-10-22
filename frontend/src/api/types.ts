@@ -157,7 +157,11 @@ export interface paths {
          */
         get: operations["get_tasks_data_api_v1_sessions__sid__tasks_get"];
         put?: never;
-        post?: never;
+        /**
+         * Create Task
+         * @description Create a task without committing calendar changes.
+         */
+        post: operations["create_task_api_v1_sessions__sid__tasks_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -204,6 +208,217 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/sessions/{sid}/tasks/{tid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Task
+         * @description Remove an unscheduled task using its owning session and version.
+         */
+        delete: operations["delete_task_api_v1_sessions__sid__tasks__tid__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Edit Task
+         * @description Edit a task that has not yet been scheduled.
+         */
+        patch: operations["edit_task_api_v1_sessions__sid__tasks__tid__patch"];
+        trace?: never;
+    };
+    "/api/v1/sessions/{sid}/commitments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Propose Commitment
+         * @description Review any required moves before saving a protected commitment.
+         */
+        post: operations["propose_commitment_api_v1_sessions__sid__commitments_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Workspace
+         * @description Create an empty personal workspace; never seed sample tasks.
+         */
+        post: operations["create_workspace_api_v1_workspaces_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{wid}/days": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Open Day
+         * @description Open/create one isolated day and materialize matching routine tasks once.
+         *
+         *     A pending proposal delays routine application until it is resolved, so merely
+         *     opening a day cannot invalidate a plan the user is reviewing.
+         */
+        post: operations["open_day_api_v1_workspaces__wid__days_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{wid}/routines": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Routines
+         * @description List active routines for the personal workspace.
+         */
+        get: operations["list_routines_api_v1_workspaces__wid__routines_get"];
+        put?: never;
+        /**
+         * Create Routine
+         * @description Save an explicitly requested recurrence; apply when a matching day opens.
+         */
+        post: operations["create_routine_api_v1_workspaces__wid__routines_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{wid}/routines/{rid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Stop Routine
+         * @description Stop future generation while preserving already created tasks and history.
+         */
+        delete: operations["stop_routine_api_v1_workspaces__wid__routines__rid__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sessions/{sid}/task-drafts/pending": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Pending
+         * @description Recover a task review after refresh, without relying on browser cache.
+         */
+        get: operations["pending_api_v1_sessions__sid__task_drafts_pending_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sessions/{sid}/task-drafts/{did}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Draft
+         * @description Retrieve an immutable review snapshot.
+         */
+        get: operations["get_draft_api_v1_sessions__sid__task_drafts__did__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sessions/{sid}/task-drafts/{did}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm
+         * @description Revalidate a batch and apply all or none; retries cannot duplicate tasks.
+         */
+        post: operations["confirm_api_v1_sessions__sid__task_drafts__did__confirm_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sessions/{sid}/task-drafts/{did}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel
+         * @description Discard a draft without changing tasks or the calendar.
+         */
+        post: operations["cancel_api_v1_sessions__sid__task_drafts__did__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -225,6 +440,8 @@ export interface components {
         AgentMessageResponse: {
             /** Response */
             response: string;
+            /** Task Draft Id */
+            task_draft_id?: string | null;
             /** Plan Id */
             plan_id?: string | null;
             /**
@@ -261,6 +478,20 @@ export interface components {
             state_version: number;
         };
         /**
+         * CommitmentRequest
+         * @description Describe a fixed event without directly writing the calendar.
+         */
+        CommitmentRequest: {
+            /** Title */
+            title: string;
+            /** Start Time */
+            start_time: string;
+            /** End Time */
+            end_time: string;
+            /** State Version */
+            state_version: number;
+        };
+        /**
          * ConfirmRequest
          * @description Accept an optional version defaulting to the proposal snapshot.
          */
@@ -286,6 +517,19 @@ export interface components {
             execution_log?: {
                 [key: string]: unknown;
             }[] | null;
+        };
+        /**
+         * DayRequest
+         * @description Select a local calendar date and its UTC offset in minutes.
+         */
+        DayRequest: {
+            /**
+             * Day
+             * Format: date
+             */
+            day: string;
+            /** Offset Minutes */
+            offset_minutes: number;
         };
         /**
          * ExecutionLogResponse
@@ -341,6 +585,45 @@ export interface components {
             degraded: boolean;
         };
         /**
+         * RoutineRequest
+         * @description Weekday numbers use Monday=0 through Sunday=6.
+         */
+        RoutineRequest: {
+            /** Name */
+            name: string;
+            /** Weekdays */
+            weekdays: number[];
+            /** Tasks */
+            tasks: components["schemas"]["RoutineTask"][];
+            /**
+             * Starts On
+             * Format: date
+             */
+            starts_on: string;
+        };
+        /**
+         * RoutineTask
+         * @description A reusable task, without a calendar commitment or a fixed deadline.
+         */
+        RoutineTask: {
+            /** Title */
+            title: string;
+            /** Duration Minutes */
+            duration_minutes: number;
+            /**
+             * Priority
+             * @default MEDIUM
+             * @enum {string}
+             */
+            priority: "HIGH" | "MEDIUM" | "LOW";
+            /**
+             * Category
+             * @default personal
+             * @enum {string}
+             */
+            category: "work" | "personal";
+        };
+        /**
          * ScheduleResponse
          * @description Represent committed schedule blocks and current state version.
          */
@@ -388,6 +671,62 @@ export interface components {
             provider: string;
             /** Seeded */
             seeded: boolean;
+        };
+        /**
+         * TaskCreate
+         * @description Require the essential task fields for creation.
+         */
+        TaskCreate: {
+            /** State Version */
+            state_version: number;
+            /** Title */
+            title: string;
+            /** Duration Minutes */
+            duration_minutes: number;
+            /**
+             * Priority
+             * @default MEDIUM
+             * @enum {string}
+             */
+            priority: "HIGH" | "MEDIUM" | "LOW";
+            /**
+             * Category
+             * @default work
+             * @enum {string}
+             */
+            category: "work" | "personal";
+            /** Deadline */
+            deadline?: string | null;
+            /** Status */
+            status?: ("pending" | "completed" | "cancelled") | null;
+        };
+        /**
+         * TaskDraftConfirmation
+         * @description Bind approval to the version that was actually reviewed.
+         */
+        TaskDraftConfirmation: {
+            /** State Version */
+            state_version: number;
+        };
+        /**
+         * TaskEdit
+         * @description Validate task updates and require an optimistic concurrency token.
+         */
+        TaskEdit: {
+            /** State Version */
+            state_version: number;
+            /** Title */
+            title?: string | null;
+            /** Duration Minutes */
+            duration_minutes?: number | null;
+            /** Priority */
+            priority?: ("HIGH" | "MEDIUM" | "LOW") | null;
+            /** Category */
+            category?: ("work" | "personal") | null;
+            /** Deadline */
+            deadline?: string | null;
+            /** Status */
+            status?: ("pending" | "completed" | "cancelled") | null;
         };
         /**
          * TasksResponse
@@ -704,6 +1043,41 @@ export interface operations {
             };
         };
     };
+    create_task_api_v1_sessions__sid__tasks_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaskCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_memory_data_api_v1_sessions__sid__memory_get: {
         parameters: {
             query?: never;
@@ -753,6 +1127,397 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ExecutionLogResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_task_api_v1_sessions__sid__tasks__tid__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sid: string;
+                tid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaskEdit"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    edit_task_api_v1_sessions__sid__tasks__tid__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sid: string;
+                tid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaskEdit"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    propose_commitment_api_v1_sessions__sid__commitments_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CommitmentRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_workspace_api_v1_workspaces_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    open_day_api_v1_workspaces__wid__days_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                wid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DayRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_routines_api_v1_workspaces__wid__routines_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                wid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_routine_api_v1_workspaces__wid__routines_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                wid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RoutineRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stop_routine_api_v1_workspaces__wid__routines__rid__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                wid: string;
+                rid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    pending_api_v1_sessions__sid__task_drafts_pending_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_draft_api_v1_sessions__sid__task_drafts__did__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sid: string;
+                did: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    confirm_api_v1_sessions__sid__task_drafts__did__confirm_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sid: string;
+                did: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaskDraftConfirmation"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_api_v1_sessions__sid__task_drafts__did__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sid: string;
+                did: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

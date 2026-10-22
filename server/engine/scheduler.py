@@ -1,9 +1,4 @@
-﻿"""Deterministic day planning with focus, personal, and overflow reservations.
-
-The timetable policy uses a five-minute planning period, focus reservations
-of 55/60/45 minutes, a 45-minute personal slot, and afternoon errands.
-Reservations may exceed estimates, as required by the pinned demo timetable.
-"""
+﻿"""Pure, deterministic interval fitting with full task durations and safe failures."""
 
 from copy import deepcopy
 from datetime import timedelta
@@ -11,13 +6,49 @@ from datetime import timedelta
 from .validator import _time, validate_schedule
 
 
-def compute_day_schedule(tasks, calendar_blocks, current_time):
-    """Allocate tasks by priority into the day policy, preserving calendar blocks.
+def _checked_time(value):
+    parsed = _time(value)
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise ValueError("Timestamps must include a timezone offset")
+    return parsed
 
-Raise ValueError when the policy cannot accommodate a task before its deadline
-or within the working day rather than returning an invalid partial schedule.
-"""
-    now = _time(current_time)
+
+def _check_blocks(blocks, current_time):
+    for block in blocks:
+        _checked_time(block["start_time"])
+        _checked_time(block["end_time"])
+    errors = validate_schedule(blocks, existing_blocks=blocks, current_time=current_time)
+    if errors:
+        raise ValueError("; ".join(errors))
+
+
+def _fit(blocks, earliest, duration, latest, title):
+    """Find the first whole free interval; never shorten a task to fit a gap."""
+    start = earliest
+    for block in sorted(blocks, key=lambda item: _time(item["start_time"])):
+        left, right = _time(block["start_time"]), _time(block["end_time"])
+        if right <= start:
+            continue
+        if start + duration <= left:
+            break
+        start = right
+    if start + duration > latest:
+        raise ValueError(
+            f"Cannot schedule {title} for its full {duration.total_seconds() / 60:g} minutes "
+            "within the working day/deadline. Shorten the task, change its deadline, "
+            "or free up calendar time and try again."
+        )
+    return start, start + duration
+
+
+def compute_day_schedule(tasks, calendar_blocks, current_time):
+    """Fit full-duration tasks around existing commitments in the 09:00–17:00 day.
+
+    Existing reservations and their identities are retained. Tasks already in the
+    calendar are not duplicated. Impossible requests fail without mutating inputs.
+    """
+    now = _checked_time(current_time)
+    _check_blocks(calendar_blocks, current_time)
     origin = now.replace(hour=9, minute=0, second=0, microsecond=0)
     day_end = origin + timedelta(hours=8)
     blocks = deepcopy(calendar_blocks)
@@ -26,88 +57,53 @@ or within the working day rather than returning an invalid partial schedule.
                task.get("status", "pending").lower() not in ("completed", "cancelled")]
     rank = {"HIGH": 0, "MEDIUM": 1, "LOW": 2}
     pending.sort(key=lambda task: (rank.get(task.get("priority", "LOW").upper(), 2),
-                                   task.get("deadline") or "9999"))
-
-    def place(title, offset, minutes, task=None):
-        """Place one reservation at or after its preferred time in a free slot."""
-        start = max(origin + timedelta(minutes=offset), now)
-        duration = timedelta(minutes=minutes)
-        for block in sorted(blocks, key=lambda item: _time(item["start_time"])):
-            left, right = _time(block["start_time"]), _time(block["end_time"])
-            if start < right and start + duration > left:
-                start = right
-        end = start + duration
-        if end > day_end or (task and task.get("deadline") and end > _time(task["deadline"])):
-            raise ValueError(f"Cannot schedule {title} within day/deadline")
-        block = {"title": title, "start_time": start.isoformat(), "end_time": end.isoformat(), "immutable": False}
-        if task:
-            block["task_id"] = task["id"]
-        blocks.append(block)
-
-    place("Planning", 0, 5)
-    focus = next((task for task in pending if task.get("category") == "work" and task["duration_minutes"] > 60), None)
-    if focus:
-        pending.remove(focus)
-        remaining = focus["duration_minutes"]
-        for part, (offset, reservation) in enumerate(((5, 55), (135, 60), (300, 45)), 1):
-            if remaining <= 0:
-                break
-            place(f"{focus['title']} (part {part})", offset, reservation, focus)
-            remaining -= reservation
-        if remaining > 0:
-            raise ValueError("Focus task exceeds available reservations")
+                                   _checked_time(task["deadline"]) if task.get("deadline") else day_end))
     for task in pending:
-        personal = task.get("category") == "personal"
-        low = task.get("priority", "").upper() == "LOW"
-        offset = 360 if personal and low else 195 if personal else 90
-        duration = min(task["duration_minutes"], 45) if personal and not low else task["duration_minutes"]
-        place(task["title"], offset, duration, task)
-    place("Buffer / overflow", 420, 60)
+        minutes = task["duration_minutes"]
+        if isinstance(minutes, bool) or not isinstance(minutes, (int, float)) or minutes <= 0:
+            raise ValueError(f"Invalid positive duration for {task['title']}")
+        latest = min(day_end, _checked_time(task["deadline"])) if task.get("deadline") else day_end
+        start, end = _fit(blocks, max(origin, now), timedelta(minutes=minutes), latest, task["title"])
+        blocks.append({"title": task["title"], "task_id": task["id"],
+                       "start_time": start.isoformat(), "end_time": end.isoformat(),
+                       "immutable": False})
     blocks.sort(key=lambda block: _time(block["start_time"]))
-    errors = validate_schedule(blocks, calendar_blocks, current_time)
-    if errors:
-        raise ValueError("; ".join(errors))
+    _check_blocks(blocks, current_time)
     return blocks
 
 
 def compute_replan(current_blocks, interruption, current_time):
-    """Insert an interruption, shift future work, and consume overflow slack."""
-    now = _time(current_time)
-    blocks = []
-    for original in current_blocks:
-        block = deepcopy(original)
-        if block["title"] == "Planning" and _time(block["end_time"]) <= now:
-            continue
-        if _time(block["end_time"]) <= now:
-            block["status"] = "completed"
-            block["immutable"] = True
-        blocks.append(block)
+    """Fit interrupted work around protected intervals, retaining IDs and durations."""
+    now = _checked_time(current_time)
+    _check_blocks(current_blocks, current_time)
     meeting = deepcopy(interruption)
+    _check_blocks([meeting], current_time)
     start, end = _time(meeting["start_time"]), _time(meeting["end_time"])
+    day_end = now.replace(hour=17, minute=0, second=0, microsecond=0)
     if start < now or end <= start:
         raise ValueError("Interruption must be a future positive interval")
-    for block in blocks:
-        if (block.get("immutable") or _time(block["start_time"]) < now) and start < _time(block["end_time"]) and _time(block["start_time"]) < end:
-            raise ValueError("Interruption overlaps protected or in-progress block")
-    cursor = end
-    for block in sorted(blocks, key=lambda item: _time(item["start_time"])):
+    # An accepted interruption becomes a fixed commitment in the proposal.
+    meeting["immutable"] = True
+    blocks, movable = [meeting], []
+    for original in current_blocks:
+        block = deepcopy(original)
         left, right = _time(block["start_time"]), _time(block["end_time"])
-        if right <= start:
-            continue
-        if block.get("immutable"):
-            if left < cursor:
-                raise ValueError("Replan collides with immutable block")
-            cursor = right
-            continue
-        shifted = max(left, cursor)
-        finish = right if block["title"] == "Buffer / overflow" else shifted + (right - left)
-        if finish <= shifted:
-            continue
-        block["start_time"], block["end_time"] = shifted.isoformat(), finish.isoformat()
-        cursor = finish
-    blocks.append(meeting)
+        protected = (block.get("immutable") or
+                     str(block.get("status", "")).lower() == "completed" or left < now)
+        if protected and start < right and left < end:
+            raise ValueError("Interruption overlaps protected or in-progress block")
+        if protected or right <= start:
+            blocks.append(block)
+        else:
+            movable.append(block)
+    for block in sorted(movable, key=lambda item: _time(item["start_time"])):
+        left, right = _time(block["start_time"]), _time(block["end_time"])
+        latest = min(day_end, _checked_time(block["deadline"])) if block.get("deadline") else day_end
+        new_start, new_end = _fit(blocks, max(left, now), right - left, latest, block["title"])
+        block.update(start_time=new_start.isoformat(), end_time=new_end.isoformat())
+        blocks.append(block)
     blocks.sort(key=lambda block: _time(block["start_time"]))
-    errors = validate_schedule(blocks, [block for block in current_blocks if block["title"] != "Planning"], current_time)
+    errors = validate_schedule(blocks, current_blocks, current_time)
     if errors:
         raise ValueError("; ".join(errors))
     return blocks

@@ -10,3 +10,10 @@
 @keyframes utterance-spin { to { transform: rotate(360deg); } }
 @media (max-width: 400px) { .utterance-bar { flex-wrap: wrap; } .utterance-bar input { flex-basis: 100%; box-sizing: border-box; } .utterance-bar button { width: 100%; } }
 @media (prefers-reduced-motion: reduce) { .utterance-bar { transition: none; } .utterance-bar__spinner { animation: none; } }
+
+.utterance-bar-container { display: flex; flex-direction: column; gap: 0.5rem; width: 100%; }
+.utterance-bar__chips { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.25rem; }
+.utterance-bar__chip { background: rgba(30, 41, 59, 0.75); border: 1px solid rgba(148, 163, 184, 0.25); border-radius: 9999px; padding: 0.35rem 0.8rem; font-size: 0.8rem; color: #cbd5e1; cursor: pointer; transition: all 0.2s; min-height: 32px; display: inline-flex; align-items: center; }
+.utterance-bar__chip:hover:not(:disabled) { background: rgba(99, 102, 241, 0.2); border-color: #818cf8; color: #f8fafc; }
+.utterance-bar__chip:disabled { opacity: 0.5; cursor: not-allowed; }
+.utterance-bar--ambient { border-color: #00caff !important; box-shadow: 0 0 25px rgba(0, 202, 255, 0.35) !important; }

@@ -10,10 +10,10 @@ if (-not $rootDir) { $rootDir = (Get-Location).Path }
 $frontendDir = Join-Path $rootDir "frontend"
 
 # Start backend uvicorn process
-$backend = Start-Process python -ArgumentList "-m", "uvicorn", "server.main:app", "--port", "8000", "--reload" -WorkingDirectory $rootDir -PassThru
+$backend = Start-Process python -ArgumentList "-m", "uvicorn", "server.main:app", "--port", "8000", "--reload" -WorkingDirectory $rootDir -WindowStyle Hidden -PassThru
 
 # Start frontend vite process via cmd.exe for Windows npm batch compatibility
-$frontend = Start-Process cmd.exe -ArgumentList "/c", "npm", "run", "dev" -WorkingDirectory $frontendDir -PassThru
+$frontend = Start-Process cmd.exe -ArgumentList "/c", "npm", "run", "dev" -WorkingDirectory $frontendDir -WindowStyle Hidden -PassThru
 
 Write-Host "`nBackend API:  http://127.0.0.1:8000" -ForegroundColor Green
 Write-Host "Frontend App: http://localhost:5173" -ForegroundColor Green

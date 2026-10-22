@@ -29,7 +29,7 @@ function categoryFor(block: ScheduleBlock): Category {
   }
   const title = block.title.toLowerCase();
   const keywords: Record<Category, string[]> = {
-    work: ['report', 'pr review', 'work', 'planning'],
+    work: ['report', 'pr review', 'review pr', 'work', 'planning'],
     meeting: ['standup', 'sync', '1-on-1', 'meeting', 'review'],
     personal: ['gym', 'grocery', 'lunch', 'personal', 'errand'],
     buffer: ['buffer', 'overflow'],

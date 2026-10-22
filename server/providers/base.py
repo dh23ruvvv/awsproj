@@ -29,6 +29,7 @@ class AgentTurnResult:
     """User response and executed tool metadata for one turn."""
 
     response: str
+    task_draft_id: str | None = None
     plan_id: str | None = None
     has_proposal: bool = False
     state_version: int = 1

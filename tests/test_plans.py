@@ -99,7 +99,7 @@ def test_confirm_and_idempotency(scenario):
         assert stored["plan_id"] == pid
     linked = {b["task_id"] for b in actual if b["task_id"]}
     assert all(t["status"] == "scheduled" for t in rows("tasks", sid) if t["id"] in linked)
-    assert rows("memory", sid)[0]["key"] == "work_style"
+    assert rows("memory", sid) == []
     before = snapshot(sid)
     logs = rows("execution_log", sid)
     repeat = client.post(url(sid, pid) + "/confirm", json={"state_version": 1})
@@ -188,7 +188,7 @@ def test_tool_and_memory_replacement(scenario):
         finally:
             db.close()
     memory = rows("memory", sid)
-    assert len(memory) == 1 and memory[0]["key"] == "manager_meeting"
+    assert memory == []  # Calendar titles are not evidence of user preferences.
 
 
 def test_completed_and_dropped(scenario):
@@ -198,8 +198,9 @@ def test_completed_and_dropped(scenario):
     mutate("UPDATE calendar_blocks SET status='completed' WHERE id=?", (original[0]["id"],))
     completed = rows("calendar_blocks", sid)[0]
     mutate("UPDATE plans SET proposed_blocks='[]' WHERE id=?", (pid,))
-    assert client.post(url(sid, pid) + "/confirm", json={}).status_code == 200
-    assert rows("calendar_blocks", sid) == [completed]
+    before = snapshot(sid)
+    assert client.post(url(sid, pid) + "/confirm", json={}).status_code == 500
+    assert snapshot(sid) == before
 
 
 @pytest.mark.parametrize("reference", ["task_id", "id"])
@@ -227,3 +228,25 @@ def test_concurrent_confirm(scenario):
     assert sum(r.json().get("already_executed", False) for r in responses) == 1
     assert rows("sessions", sid)[0]["state_version"] == 2
     assert len([r for r in rows("execution_log", sid) if r["tool_name"] == "commit_schedule"]) == 1
+
+
+def test_commit_preserves_persistent_meeting_uuids(scenario):
+    """When proposed blocks omit explicit IDs, commit preserves existing meeting UUIDs."""
+    client, sid, pid = scenario
+    # Get original UUID of Team standup
+    original_blocks = rows("calendar_blocks", sid)
+    standup_orig = next(b for b in original_blocks if b["title"] == "Team standup")
+    orig_uuid = standup_orig["id"]
+
+    # Propose block without an 'id' field
+    proposed = [
+        {"title": "Team standup", "start_time": standup_orig["start_time"], "end_time": standup_orig["end_time"], "task_id": standup_orig["task_id"], "immutable": True}
+    ]
+    proposed.extend(b for b in original_blocks if b["id"] != orig_uuid)
+    mutate("UPDATE plans SET proposed_blocks=? WHERE id=?", (json.dumps(proposed), pid))
+    res = client.post(url(sid, pid) + "/confirm", json={})
+    assert res.status_code == 200
+
+    new_blocks = rows("calendar_blocks", sid)
+    standup_new = next(b for b in new_blocks if b["title"] == "Team standup")
+    assert standup_new["id"] == orig_uuid

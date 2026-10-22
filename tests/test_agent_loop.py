@@ -35,7 +35,7 @@ def test_full_turn_one(client):
     """Persist a proposed plan through the provider's complete tool sequence."""
     sid = create_session(client)
     response = client.post(f"/api/v1/sessions/{sid}/agent/message", json={
-        "message": "Plan my day — I need to finish the quarterly report by 5 PM and review that PR before the 2 PM meeting.",
+        "message": "Plan my day",
         "state_version": 1,
     })
     assert response.status_code == 200
@@ -111,9 +111,11 @@ def test_optional_version_and_current_state(client):
             connection.execute("UPDATE sessions SET state_version = ? WHERE id = ?", (7, sid))
     finally:
         connection.close()
-    for extra in ({}, {"state_version": None}, {"state_version": 1}):
+    for extra in ({}, {"state_version": None}, {"state_version": 7}):
         response = client.post(f"/api/v1/sessions/{sid}/agent/message", json={"message": "hello", **extra})
         assert response.status_code == 200
         assert response.json()["state_version"] == 7
         assert response.json()["has_proposal"] is False
         assert response.json()["plan_id"] is None
+    stale = client.post(f"/api/v1/sessions/{sid}/agent/message", json={"message": "Plan my day", "state_version": 1})
+    assert stale.status_code == 409

@@ -19,6 +19,7 @@
 .plan-preview__section { --diff-color: #a7f3d0; --diff-bg: rgba(100, 116, 139, .15); }
 .plan-preview__section--moved { --diff-color: #fde68a; --diff-bg: rgba(245, 158, 11, .12); }
 .plan-preview__section--shortened { --diff-color: #fdba74; --diff-bg: rgba(249, 115, 22, .12); }
+.plan-preview__section--lengthened { --diff-color: #38bdf8; --diff-bg: rgba(14, 165, 233, .12); }
 .plan-preview__section--dropped { --diff-color: #fda4af; --diff-bg: rgba(244, 63, 94, .12); }
 .plan-preview__section--added { --diff-color: #67e8f9; --diff-bg: rgba(16, 185, 129, .12); }
 .plan-preview__section h3 { margin: 0 0 .5rem; color: var(--diff-color); font-size: .8rem; letter-spacing: .05em; }

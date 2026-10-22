@@ -62,6 +62,8 @@ def reset_session(sid: str) -> SessionResetResponse | JSONResponse:
                 previous = _last_reset.get(sid)
                 if previous is not None and current - previous < 5:
                     return _error(429, "RATE_LIMITED", "Reset rate limit exceeded. Please wait 5 seconds.")
+                connection.execute("DELETE FROM task_drafts WHERE session_id = ?", (sid,))
+                connection.execute("DELETE FROM agent_messages WHERE session_id = ?", (sid,))
                 connection.execute("DELETE FROM execution_log WHERE session_id = ?", (sid,))
                 connection.execute("DELETE FROM calendar_blocks WHERE session_id = ?", (sid,))
                 connection.execute("DELETE FROM plans WHERE session_id = ?", (sid,))

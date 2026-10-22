@@ -4,8 +4,8 @@ from .validator import _identity, _time
 
 
 def compute_diff(old_blocks, new_blocks):
-    """Classify changes; moving and shortening may both apply to one block."""
-    result = {key: [] for key in ("kept", "moved", "shortened", "dropped", "added")}
+    """Classify changes; moving, shortening, and lengthening may apply to blocks."""
+    result = {key: [] for key in ("kept", "moved", "shortened", "lengthened", "dropped", "added")}
     remaining = list(new_blocks)
     for old in old_blocks:
         match = next((new for new in remaining if _identity(new) == _identity(old)), None)
@@ -24,5 +24,7 @@ def compute_diff(old_blocks, new_blocks):
         new_duration = int((_time(match["end_time"]) - _time(match["start_time"])).total_seconds() / 60)
         if new_duration < old_duration:
             result["shortened"].append({**base, "old_duration_min": old_duration, "new_duration_min": new_duration})
+        elif new_duration > old_duration:
+            result["lengthened"].append({**base, "old_duration_min": old_duration, "new_duration_min": new_duration})
     result["added"] = [{key: block[key] for key in ("title", "start_time", "end_time")} for block in remaining]
     return result

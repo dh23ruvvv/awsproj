@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 import jsonschema
+from server.tools.task_drafts import TaskDraftInput, propose_task_changes
 from server.tools.commit_tools import commit_schedule
 from server.tools.propose_tools import propose_schedule, propose_replan
 
@@ -92,6 +93,7 @@ for _tool in (
     Tool("get_current_time", "READ", "Get current time (injectable)", _object_schema({}), get_current_time),
     Tool("get_schedule", "READ", "Get committed schedule", _object_schema({}), get_schedule),
     Tool("get_memory", "READ", "Retrieve stored memory entries", _object_schema({}), get_memory),
+    Tool("propose_task_changes", "PROPOSE", "Draft additions, full updates or removals of pending tasks for HUMAN REVIEW. Ask for missing durations or ambiguous task identity first. Never schedule newly drafted tasks until confirmed in a later turn.", TaskDraftInput.model_json_schema(), propose_task_changes),
     Tool("propose_schedule", "PROPOSE", "Propose a new day schedule", _proposal_schema("blocks"), propose_schedule),
     Tool("propose_replan", "PROPOSE", "Propose schedule changes after interruption", _proposal_schema("new_blocks"), propose_replan),
     Tool("commit_schedule", "COMMIT", "Commit approved plan to schedule", _object_schema(

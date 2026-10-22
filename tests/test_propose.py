@@ -48,7 +48,7 @@ def call(db, name, args):
 
 @pytest.mark.parametrize("fallback", [False, True])
 def test_schedule(db, fallback):
-    """Store validated caller blocks or the exact golden timetable and audit data."""
+    """Store validated caller blocks or a full-duration schedule and audit data."""
     before = snapshot(db)
     supplied = blocks(db)
     args = {"blocks": [] if fallback else supplied, "explanation": "Plan the day"}
@@ -56,10 +56,14 @@ def test_schedule(db, fallback):
     plan = dict(db.execute("SELECT * FROM plans WHERE id = ?", (result["plan_id"],)).fetchone())
     proposed = json.loads(plan["proposed_blocks"])
     if fallback:
-        assert [(b["start_time"][11:16], b["end_time"][11:16]) for b in proposed] == [
-            ("09:00", "09:05"), ("09:05", "10:00"), ("10:00", "10:30"),
-            ("10:30", "11:15"), ("11:15", "12:15"), ("12:15", "13:00"),
-            ("13:00", "14:00"), ("14:00", "14:45"), ("15:00", "16:00"), ("16:00", "17:00")]
+        tasks = {row["id"]: row["duration_minutes"] for row in db.execute("SELECT * FROM tasks WHERE session_id = 'session'")}
+        from datetime import datetime
+        totals = {}
+        for item in proposed:
+            if item.get("task_id"):
+                minutes = (datetime.fromisoformat(item["end_time"]) - datetime.fromisoformat(item["start_time"])).total_seconds() / 60
+                totals[item["task_id"]] = totals.get(item["task_id"], 0) + minutes
+        assert totals == tasks
     else:
         assert proposed == supplied
     assert plan["status"] == "PROPOSED"
@@ -142,3 +146,17 @@ def test_log_failure_rolls_back_plan(db):
     assert db.execute("SELECT count(*) FROM plans").fetchone()[0] == 0
     assert db.execute("SELECT state_version FROM sessions WHERE id = 'session'").fetchone()[0] == 7
 
+
+def test_propose_cancels_superseded_proposals(db):
+    """Subsequent proposals cancel earlier unconfirmed proposals for the session."""
+    args = {"blocks": blocks(db), "explanation": "Proposal 1"}
+    res1 = call(db, "propose_schedule", args)
+    p1 = db.execute("SELECT status FROM plans WHERE id = ?", (res1["plan_id"],)).fetchone()
+    assert p1[0] == "PROPOSED"
+
+    args2 = {"blocks": blocks(db), "explanation": "Proposal 2"}
+    res2 = call(db, "propose_schedule", args2)
+    p1_updated = db.execute("SELECT status FROM plans WHERE id = ?", (res1["plan_id"],)).fetchone()
+    p2 = db.execute("SELECT status FROM plans WHERE id = ?", (res2["plan_id"],)).fetchone()
+    assert p1_updated[0] == "CANCELLED"
+    assert p2[0] == "PROPOSED"

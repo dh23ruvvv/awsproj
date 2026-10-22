@@ -8,7 +8,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from server.config import settings
 from server.database import init_db
 from server.models import ErrorDetail, ErrorEnvelope
-from server.routers import agent, data, plans, sessions
+from server.routers import agent, data, plans, sessions, tasks, commitments, workspaces, task_drafts
 
 
 @asynccontextmanager
@@ -24,8 +24,10 @@ app = FastAPI(title="FlowPilot", lifespan=lifespan)
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(_request: Request, exc: RequestValidationError) -> JSONResponse:
     """Return documented ErrorEnvelope for request validation errors."""
-    envelope = ErrorEnvelope(error=ErrorDetail(code="VALIDATION_ERROR", message="Invalid request payload", details={"errors": exc.errors()}))
-    return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content=envelope.model_dump())
+    errors = [{key: value for key, value in error.items() if key != "ctx"} for error in exc.errors()]
+    envelope = ErrorEnvelope(error=ErrorDetail(code="VALIDATION_ERROR", message="Invalid request payload", details={"errors": errors}))
+    from fastapi.encoders import jsonable_encoder
+    return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content=jsonable_encoder(envelope))
 
 
 @app.exception_handler(StarletteHTTPException)
@@ -44,6 +46,10 @@ app.include_router(sessions.router, prefix="/api/v1")
 app.include_router(plans.router, prefix="/api/v1")
 app.include_router(agent.router, prefix="/api/v1")
 app.include_router(data.router, prefix="/api/v1")
+app.include_router(tasks.router, prefix="/api/v1")
+app.include_router(commitments.router, prefix="/api/v1")
+app.include_router(workspaces.router, prefix="/api/v1")
+app.include_router(task_drafts.router, prefix="/api/v1")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[origin.strip() for origin in settings.flowpilot_cors_origins.split(",") if origin.strip()],

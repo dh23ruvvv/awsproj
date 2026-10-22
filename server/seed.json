@@ -35,7 +35,7 @@
       "deadline": null,
       "priority": "HIGH",
       "category": "meeting",
-      "status": "pending"
+      "status": "scheduled"
     },
     {
       "id": "T5",

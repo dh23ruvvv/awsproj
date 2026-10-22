@@ -75,6 +75,14 @@ def test_create_session(client, seed):
         assert rows("tasks", sid) == rows("calendar_blocks", sid) == []
 
 
+@pytest.mark.parametrize("timestamp", ["bad-clock", "2026-10-22", "2026-10-22T09:00:00"])
+def test_reject_invalid_session_clock(client, timestamp):
+    """Bad clocks produce a recoverable validation error before creating a session."""
+    response = client.post("/api/v1/sessions", json={"seed": True, "demo_timestamp": timestamp})
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "VALIDATION_ERROR"
+
+
 def test_reset_clears_state_and_preserves_other_session(client):
     """Reset populated dependent tables without changing another session."""
     sid = client.post("/api/v1/sessions", json={"seed": True}).json()["session_id"]

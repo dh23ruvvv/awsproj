@@ -7,8 +7,9 @@ from uuid import uuid4
 
 from server.clock import now
 from server.engine.scheduler import compute_day_schedule
-from server.engine.validator import validate_schedule, _time
+from server.engine.validator import validate_schedule, inherit_block_metadata
 from server.engine.differ import compute_diff
+from server.engine.task_validation import validate_task_allocations
 
 
 def _propose(session_id: str, args: dict, db_conn: Connection, replan: bool) -> dict:
@@ -25,9 +26,6 @@ def _propose(session_id: str, args: dict, db_conn: Connection, replan: bool) -> 
     )]
     if replan:
         blocks = args.get("new_blocks", [])
-        for block in existing:
-            if block.get("status") == "completed" or _time(block["end_time"]) <= _time(current_time):
-                block["immutable"] = True
     else:
         blocks = args.get("blocks")
         if not blocks:
@@ -35,7 +33,11 @@ def _propose(session_id: str, args: dict, db_conn: Connection, replan: bool) -> 
                 "SELECT * FROM tasks WHERE session_id = ?", (session_id,)
             )]
             blocks = compute_day_schedule(tasks, existing, current_time)
+    blocks = inherit_block_metadata(blocks, existing)
     errors = validate_schedule(blocks, existing, current_time)
+    if errors:
+        raise ValueError("; ".join(errors))
+    errors = validate_task_allocations(db_conn, session_id, blocks)
     if errors:
         raise ValueError("; ".join(errors))
     diff = compute_diff(existing, blocks)
@@ -44,6 +46,10 @@ def _propose(session_id: str, args: dict, db_conn: Connection, replan: bool) -> 
     tool_name = "propose_replan" if replan else "propose_schedule"
     db_conn.execute("SAVEPOINT propose_tool")
     try:
+        db_conn.execute(
+            "UPDATE plans SET status = 'CANCELLED' WHERE session_id = ? AND status = 'PROPOSED'",
+            (session_id,)
+        )
         db_conn.execute(
             "INSERT INTO plans (id, session_id, status, proposed_blocks, diff_summary, explanation, "
             "state_version_at_proposal, provider_used, degraded, created_at) "

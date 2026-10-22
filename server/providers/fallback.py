@@ -18,12 +18,16 @@ class FallbackProvider:
     async def run_agent_turn(self, message: str, context: AgentContext) -> AgentTurnResult:
         """Run the primary when healthy and label every fallback response."""
         if self.failure_count < 2 or time.time() - self.last_failure_time >= 60.0:
+            context.db_conn.execute("SAVEPOINT primary_provider")
             try:
                 result = await self.primary.run_agent_turn(message, context)
             except Exception:
+                context.db_conn.execute("ROLLBACK TO SAVEPOINT primary_provider")
+                context.db_conn.execute("RELEASE SAVEPOINT primary_provider")
                 self.failure_count += 1
                 self.last_failure_time = time.time()
             else:
+                context.db_conn.execute("RELEASE SAVEPOINT primary_provider")
                 self.failure_count = 0
                 return result
         result = await self.fallback.run_agent_turn(message, context)

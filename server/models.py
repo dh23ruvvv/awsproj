@@ -1,6 +1,6 @@
 """Pydantic request, response, data, and diff contracts from TASK-004."""
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class ErrorDetail(BaseModel):
@@ -22,6 +22,17 @@ class SessionCreateRequest(BaseModel):
 
     seed: bool = True
     demo_timestamp: str | None = None
+
+    @field_validator("demo_timestamp")
+    @classmethod
+    def validate_clock(cls, value):
+        """Reject malformed or timezone-free clocks before persisting a session."""
+        if value is not None:
+            from server.clock import now
+            if "T" not in value:
+                raise ValueError("Demo clock must include date and time")
+            return now(value)
+        return value
 
 
 class SessionResponse(BaseModel):
@@ -60,6 +71,7 @@ class AgentMessageResponse(BaseModel):
     """Represent the documented AgentMessageResponse contract."""
 
     response: str
+    task_draft_id: str | None = None
     plan_id: str | None = None
     has_proposal: bool = False
     state_version: int = 1
@@ -103,6 +115,15 @@ class DiffShortenedItem(BaseModel):
     new_duration_min: int
 
 
+class DiffLengthenedItem(BaseModel):
+    """Represent the documented DiffLengthenedItem contract."""
+
+    block_id: str
+    title: str
+    old_duration_min: int
+    new_duration_min: int
+
+
 class DiffDroppedItem(BaseModel):
     """Represent the documented DiffDroppedItem contract."""
 
@@ -125,6 +146,7 @@ class DiffSummary(BaseModel):
     kept: list[DiffItem]
     moved: list[DiffMovedItem]
     shortened: list[DiffShortenedItem]
+    lengthened: list[DiffLengthenedItem] = Field(default_factory=list)
     dropped: list[DiffDroppedItem]
     added: list[DiffAddedItem]
 

@@ -15,7 +15,8 @@ $checkFile = "frontend/src/api/types.ts.check"
 
 if (Test-Path $typesFile) {
     Write-Host "Checking generated types against $typesFile..."
-    npx -y openapi-typescript generated/openapi.json -o $checkFile
+    # Use the installed, lockfile-resolved frontend tool; avoid a registry lookup.
+    & .\frontend\node_modules\.bin\openapi-typescript.cmd generated/openapi.json -o $checkFile
     if ($LASTEXITCODE -ne 0) {
         Write-Error "openapi-typescript generation failed"
         if (Test-Path $checkFile) { Remove-Item $checkFile }

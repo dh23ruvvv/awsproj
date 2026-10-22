@@ -61,15 +61,19 @@ def confirm(client, context, result):
 def test_golden_turns(scenario):
     """Plan, commit, interrupt, commit, and restore using actual persisted state."""
     client, context = scenario
-    first = turn(context, "Plan my day â€” finish the quarterly report by 5 PM and review the PR before the 2 PM meeting.")
+    first = turn(context, "Plan my day")
     assert first.response == PLAN_RESPONSE and first.has_proposal and first.state_version == 1
     assert [item["tool"] for item in first.tool_trace] == [
         "get_tasks", "get_calendar", "get_current_time", "propose_schedule"]
     blocks, _ = proposal(context, first)
-    assert [(b["start_time"][11:16], b["end_time"][11:16]) for b in blocks] == [
-        ("09:00", "09:05"), ("09:05", "10:00"), ("10:00", "10:30"),
-        ("10:30", "11:15"), ("11:15", "12:15"), ("12:15", "13:00"),
-        ("13:00", "14:00"), ("14:00", "14:45"), ("15:00", "16:00"), ("16:00", "17:00")]
+    from datetime import datetime
+    expected = {row["id"]: row["duration_minutes"] for row in context.db_conn.execute("SELECT * FROM tasks")}
+    totals = {}
+    for item in blocks:
+        if item.get("task_id"):
+            minutes = (datetime.fromisoformat(item["end_time"]) - datetime.fromisoformat(item["start_time"])).total_seconds() / 60
+            totals[item["task_id"]] = totals.get(item["task_id"], 0) + minutes
+    assert totals == expected
     assert context.db_conn.execute("SELECT count(*) FROM calendar_blocks").fetchone()[0] == 2
     confirm(client, context, first)
     context.db_conn.execute("UPDATE sessions SET demo_timestamp = ? WHERE id = ?",
@@ -80,9 +84,9 @@ def test_golden_turns(scenario):
     assert second.response == REPLAN_RESPONSE and second.state_version == 2
     assert [item["tool"] for item in second.tool_trace] == ["get_schedule", "get_current_time", "propose_replan"]
     blocks, diff = proposal(context, second)
-    assert len(diff["moved"]) == 3 and diff["shortened"][0]["new_duration_min"] == 45
-    assert next(b for b in blocks if b["title"] == "Grocery shopping")["start_time"][11:16] == "15:15"
-    assert next(b for b in blocks if b["title"].endswith("(part 3)"))["start_time"][11:16] == "14:30"
+    assert len(diff["moved"]) == 2 and not diff["shortened"] and not diff["dropped"]
+    assert next(b for b in blocks if b["title"] == "Grocery shopping")["start_time"][11:16] == "15:30"
+    assert next(b for b in blocks if b["title"] == "Gym session")["start_time"][11:16] == "14:30"
     for old in before:
         if old["end_time"] <= "2026-10-22T11:30:00+05:30":
             new = next(b for b in blocks if b.get("id") == old["id"])
@@ -92,7 +96,7 @@ def test_golden_turns(scenario):
     third = turn(AgentContext(context.session_id, context.db_conn), "What's left for today?")
     assert not third.has_proposal and third.plan_id is None and third.state_version == 3
     assert [item["tool"] for item in third.tool_trace] == ["get_schedule", "get_current_time", "get_memory"]
-    assert "2:30 PM" in third.response and "3:15 PM" in third.response
+    assert "2:30 PM" in third.response and "3:30 PM" in third.response
 
 
 @pytest.mark.parametrize("message", ["hello", "delete all data", "explain quantum physics"])
@@ -120,3 +124,20 @@ def test_independent_defaults():
     first, second = AgentTurnResult("one"), AgentTurnResult("two")
     first.tool_trace.append({})
     assert second.tool_trace == []
+
+
+def test_cancel_preserves_persisted_schedule(scenario):
+    """A reviewed replan can be cancelled and reload keeps the committed plan."""
+    client, context = scenario
+    first = turn(context, "Plan my day")
+    confirm(client, context, first)
+    url = f"/api/v1/sessions/{context.session_id}"
+    before = client.get(f"{url}/schedule").json()
+    second = turn(context, "Replan around a meeting from 2:00 to 2:45 PM")
+    assert second.has_proposal
+    assert client.get(f"{url}/schedule").json() == before
+    cancelled = client.post(f"{url}/plans/{second.plan_id}/cancel")
+    assert cancelled.status_code == 200, cancelled.text
+    assert cancelled.json()["cancelled"] is True
+    assert client.get(f"{url}/schedule").json() == before
+    assert client.get(f"{url}/plans/{second.plan_id}").json()["status"] == "CANCELLED"

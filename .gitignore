@@ -52,3 +52,6 @@ handoff/*
 # Coverage
 htmlcov/
 .coverage
+.test-tmp*/
+.pytest_cache/
+artifacts/

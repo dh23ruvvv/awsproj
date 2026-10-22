@@ -43,6 +43,13 @@ def check_invariants(blocks: list[dict], current_time_str: str = "2026-10-22T09:
         elif task_id == "T2":
             assert end_dt <= datetime.fromisoformat("2026-10-22T14:00:00"), f"T2 scheduled after deadline: {end_dt}"
 
+    expected_minutes = {"Quarterly report draft": 120, "Review PR #247": 45,
+                        "Grocery shopping": 60, "Team standup": 30, "Gym session": 60}
+    for title, expected in expected_minutes.items():
+        total = sum((parse_dt(b["end_time"]) - parse_dt(b["start_time"])).total_seconds() / 60
+                    for b in blocks if b["title"] == title)
+        assert total == expected, f"{title}: expected full {expected} minutes, got {total}"
+
     # Invariant 5: Immutable calendar blocks preserved
     standup = [b for b in blocks if "standup" in b["title"].lower()]
     lunch = [b for b in blocks if "lunch" in b["title"].lower()]
@@ -75,15 +82,15 @@ def test_golden_smoke_deterministic(tmp_path, monkeypatch):
         assert v1 == 1
 
         # Step 2: Turn 1 (Initial Planning)
-        t1_msg = "Plan my day — I need to finish the quarterly report by 5 PM and review that PR before the 2 PM meeting."
-        turn1_res = client.post(f"/api/v1/sessions/{sid}/agent/message", json={"message": t1_msg})
+        t1_msg = "Plan my day"
+        turn1_res = client.post(f"/api/v1/sessions/{sid}/agent/message", json={"message": t1_msg, "state_version": 1})
         assert turn1_res.status_code == 200, turn1_res.text
         t1_data = turn1_res.json()
         assert t1_data["has_proposal"] is True
         assert t1_data["plan_id"] is not None
         assert t1_data["provider_used"] == "deterministic"
         assert t1_data["degraded"] is False
-        assert "report" in t1_data["response"].lower() or "focused schedule" in t1_data["response"].lower()
+        assert "proposal" in t1_data["response"].lower()
 
         plan1_id = t1_data["plan_id"]
         # Verify plan state PROPOSED
@@ -113,12 +120,13 @@ def test_golden_smoke_deterministic(tmp_path, monkeypatch):
         check_invariants(sched1["blocks"])
 
         mem1 = client.get(f"/api/v1/sessions/{sid}/memory").json()
-        assert len(mem1["entries"]) >= 1
-        assert any("work_style" in entry["key"] for entry in mem1["entries"])
+        assert mem1["entries"] == []
 
+        with get_connection() as db:
+            db.execute("UPDATE sessions SET demo_timestamp = ? WHERE id = ?", ("2026-10-22T11:30:00+05:30", sid))
         # Step 4: Turn 2 (Interruption and Replan at 11:30 IST)
         t2_msg = "My manager just scheduled a 1-on-1 at 2 PM for 30 minutes — replan around it."
-        turn2_res = client.post(f"/api/v1/sessions/{sid}/agent/message", json={"message": t2_msg})
+        turn2_res = client.post(f"/api/v1/sessions/{sid}/agent/message", json={"message": t2_msg, "state_version": v2})
         assert turn2_res.status_code == 200, turn2_res.text
         t2_data = turn2_res.json()
         assert t2_data["has_proposal"] is True
@@ -154,11 +162,10 @@ def test_golden_smoke_deterministic(tmp_path, monkeypatch):
         check_invariants(sched2["blocks"])
 
         mem2 = client.get(f"/api/v1/sessions/{sid}/memory").json()
-        assert len(mem2["entries"]) >= 2
-        assert any("manager" in entry["key"].lower() for entry in mem2["entries"])
+        assert mem2["entries"] == []
 
         t3_msg = "What's left for today?"
-        turn3_res = client.post(f"/api/v1/sessions/{sid}/agent/message", json={"message": t3_msg})
+        turn3_res = client.post(f"/api/v1/sessions/{sid}/agent/message", json={"message": t3_msg, "state_version": v3})
         assert turn3_res.status_code == 200
         t3_data = turn3_res.json()
         assert t3_data["has_proposal"] is False
@@ -189,8 +196,8 @@ def test_golden_smoke_fallback(tmp_path, monkeypatch):
             create_res = client.post("/api/v1/sessions", json={"seed": True})
             sid = create_res.json()["session_id"]
 
-            t1_msg = "Plan my day — I need to finish the quarterly report by 5 PM and review that PR before the 2 PM meeting."
-            turn_res = client.post(f"/api/v1/sessions/{sid}/agent/message", json={"message": t1_msg})
+            t1_msg = "Plan my day"
+            turn_res = client.post(f"/api/v1/sessions/{sid}/agent/message", json={"message": t1_msg, "state_version": 1})
             assert turn_res.status_code == 200, turn_res.text
             data = turn_res.json()
             assert data["degraded"] is True
@@ -206,7 +213,7 @@ def test_golden_smoke_fallback(tmp_path, monkeypatch):
         agent._live_provider.cache_clear()
 
 
-@pytest.mark.skipif(not (settings.gemini_api_key or os.getenv("GEMINI_API_KEY")), reason="GEMINI_API_KEY is not set")
+@pytest.mark.skipif(os.getenv("FLOWPILOT_RUN_LIVE_TESTS") != "1" or not (settings.gemini_api_key or os.getenv("GEMINI_API_KEY")), reason="Live API calls require FLOWPILOT_RUN_LIVE_TESTS=1 and a key")
 def test_golden_smoke_live_invariants(tmp_path, monkeypatch):
     """
     Test live Gemini provider against all 7 invariants if API key is active.
@@ -220,8 +227,8 @@ def test_golden_smoke_live_invariants(tmp_path, monkeypatch):
         sid = create_res.json()["session_id"]
         v1 = create_res.json()["state_version"]
 
-        t1_msg = "Plan my day — I need to finish the quarterly report by 5 PM and review that PR before the 2 PM meeting."
-        turn_res = client.post(f"/api/v1/sessions/{sid}/agent/message", json={"message": t1_msg})
+        t1_msg = "Plan my day"
+        turn_res = client.post(f"/api/v1/sessions/{sid}/agent/message", json={"message": t1_msg, "state_version": 1})
         assert turn_res.status_code == 200, turn_res.text
         data = turn_res.json()
         assert data["provider_used"] in ("gemini", "gemini-fallback")

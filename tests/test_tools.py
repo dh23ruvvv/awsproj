@@ -12,15 +12,15 @@ from server.database import SCHEMA, get_connection, seed_session
 def test_default_tools() -> None:
     """The singleton has executable tools in every tier."""
     tools = default_registry.list_tools()
-    assert len(tools) == 8
+    assert len(tools) == 9
     assert {tool.name for tool in tools} == {
         "get_tasks", "get_calendar", "get_current_time", "get_schedule",
-        "get_memory", "propose_schedule", "propose_replan", "commit_schedule",
+        "get_memory", "propose_schedule", "propose_replan", "propose_task_changes", "commit_schedule",
     }
     assert all(callable(tool.handler) for tool in tools)
 
 
-@pytest.mark.parametrize("tier,count", [("READ", 5), ("PROPOSE", 2), ("COMMIT", 1)])
+@pytest.mark.parametrize("tier,count", [("READ", 5), ("PROPOSE", 3), ("COMMIT", 1)])
 def test_tier_filter(tier: str, count: int) -> None:
     """Tier filters return only tools from the requested tier."""
     tools = default_registry.list_tools(tier)
