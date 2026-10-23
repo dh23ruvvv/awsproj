@@ -66,7 +66,7 @@ with sync_playwright() as p:
     page.get_by_label('Planning day', exact=True).fill('2026-10-24')
     expect(page.get_by_role('tab', name='Tasks (2)', exact=True)).to_be_visible()
     expect(page.get_by_role('tab', name='Timeline (2)', exact=True)).to_be_visible()
-    assert page.get_by_text('Tool Execution Trace', exact=False).count() == 0
+    expect(page.get_by_text('Tool Execution Trace', exact=True)).to_be_visible()
     out = Path('data/personal-days'); out.mkdir(parents=True, exist_ok=True)
     page.screenshot(path=str(out / 'desktop.png'), full_page=True)
     for width in [320, 390, 768, 1024, 1440]:

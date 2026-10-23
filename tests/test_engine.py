@@ -160,7 +160,7 @@ def test_completed_future_block_stays_fixed():
 
 
 def test_replan_impossible_day_fails_without_mutation():
-    old = [block("Work", "15:00", "17:00", id="stable")]
+    old = [block("Work", "15:00", "17:00", id="stable", deadline="2026-10-22T17:00:00+05:30")]
     original = deepcopy(old)
     with pytest.raises(ValueError, match="full 120 minutes"):
         compute_replan(old, block("Emergency", "15:00", "16:00"), "2026-10-22T09:00:00+05:30")

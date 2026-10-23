@@ -1,54 +1,95 @@
-# Release progress
+# Release verification
 
-| Work | Owner | Status | Verification |
-|---|---|---|---|
-| Forensic audit | root | DONE | Working tree, code, scripts, initial test execution |
-| Duration-based scheduler | scheduler agent + root | DONE | Full-duration, overlap, immutable/in-progress and capacity regressions |
-| Honest offline parsing | provider agent | DONE | Explicit interruption intervals; unsupported commands explained |
-| Task API / approval safety | root | DONE | CRUD, versioning, task ownership, protected identities, deadlines and atomicity tests |
-| UI lifecycle and task controls | UI agent + root | DONE | Typecheck/build and real browser journey |
-| Integration / browser verification | root | DONE | 203 passed, 2 live tests skipped; desktop/mobile browser and direct SQLite checks |
-| README / demo / submission package | provider agent + root | DONE | Final labels, launch commands, client meeting setup and official rules checked |
-| Record/publicly upload video | HUMAN | TODO | Public YouTube/Vimeo link, under three minutes |
-| Share repository and finalize Devpost | HUMAN | TODO | Accessible repository and submitted-state confirmation |
+## Final verification gate — October 23, 2026
 
-No existing user data reset, deployment, submission or commit performed.
+| Exact command | Result |
+| --- | --- |
+| `python -m pytest tests/ -q -p no:cacheprovider --basetemp .test-tmp-final` | 263 passed, 3 skipped, 18 warnings in 34.48s |
+| `npm.cmd --prefix frontend run build` | TypeScript passed; Vite 8.3.5 transformed 43 modules; built in 199ms |
+| `npm.cmd run contract:check` | Contract check passed: types are in sync. |
+| `npm.cmd run smoke` | 2 passed, 1 skipped, 2 warnings in 1.47s; Golden Smoke Test PASSED cleanly! |
 
-## Final verification (Windows, October 22, 2026)
+The three submission-readiness commands exited 0. The smoke result above is from
+the earlier verification, whose stdout/stderr is saved locally in the ignored
+`data/release-verification.txt`. The first smoke attempt encountered Windows
+permissions on a reused `.test-tmp-smoke` directory. The runner now uses pytest's
+fresh temporary directories; the final command above passed. Existing temp
+directories and user databases were not deleted.
 
-- `npm.cmd test -- --tb=short -q`: **203 passed, 2 skipped**. Skips are explicit live-API tests; dependencies emit deprecation warnings. A key alone no longer triggers live requests; `FLOWPILOT_RUN_LIVE_TESTS=1` is also required.
-- `npm.cmd run smoke`: **2 passed, 1 live test skipped**.
-- `npm.cmd --prefix frontend run build`: **PASS**, including TypeScript `tsc --noEmit`. No independent frontend lint script is configured.
-- `npm.cmd run contract:check`: **PASS**. OpenAPI and generated frontend types match. Repaired the script to use its installed frontend dependency; the old root `npx` attempted an unnecessary blocked registry request.
-- `python scripts/browser_release.py --url http://127.0.0.1:8013`: **PASS**, headless installed Chrome, 1440px desktop and 390px mobile. Checks task create/edit/remove; proposal reload; cancel safety; confirmation matches review; refresh persistence; explicit interruption; fixed client meeting; recoverable protected-event conflict; new workspace preserves previous session; no JavaScript exceptions or horizontal overflow.
-- Direct SQLite inspection of `data/release-final-verification.db`: **PASS**, two preserved sessions, final session seven nonoverlapping blocks, all linked task durations complete, 15:30 protected client meeting, version 6.
-- `git diff --check`: **PASS** (Git emits existing Windows line-ending notices).
-- Credential-pattern scan of 126 tracked/new source files: no matches for standard Google/AWS/GitHub key or private-key patterns, and no tracked `.env` or `.env.local`. This is a targeted scan, not a security audit or history scan.
-- Backend static frontend serving was exercised through real HTTP on isolated test databases. Live Gemini inference was not verified. Fresh-machine Python dependency installation was not performed; README distinguishes this from observed local start/build.
+Encoding audit: 118 source/documentation files, zero mojibake sequences and zero
+UTF-8 BOMs. `git diff --check` passed. The final build also includes the grayscale
+styling correction for expanded tool traces and the linked-session return link.
 
-Screenshots are local, gitignored artifacts in `data/browser-release/`: `desktop-home.png`, `desktop-proposal.png`, `desktop-client-confirmed.png`, `mobile-confirmed.png`. Regenerate with the browser script before sharing.
+The offline suite skips the three explicitly opt-in live tests. Dependency
+warnings concern Starlette's httpx integration, the HTTP 422 constant and Google's
+SDK typing; no application test failed in the final run.
 
-## Resulting behavior and changed paths
+## Live Gemini evidence
 
-- Backend: `server/engine/{scheduler,validator,differ,task_validation}.py`, `server/tools/{propose_tools,commit_tools}.py`, `server/routers/{agent,tasks,commitments}.py`, `server/providers/{deterministic,gemini,fallback}.py`, `server/{config,database,main,models}.py`, `server/seed.json`.
-- Frontend: `frontend/src/App.{tsx,css}`, `frontend/src/api/{client,types}.ts`, task/fixed-event editors, TaskList, ScheduleTimeline, PlanPreview, ResponseLine and UtteranceBar components/styles. Removed the pending-task Schedule button whose utterance was unsupported in offline mode. New demo workspaces retain previous data.
-- Verification/contracts: new `tests/test_release_{api,provider,commitments}.py`; updated engine, provider, lifecycle, proposal, session and smoke regressions; `scripts/{browser_release.py,contract_check.ps1,dev.ps1,smoke.ps1}`, `generated/openapi.json`.
-- Setup/package: `.env.example`, `.gitignore`, `requirements-dev.txt`, `package.json` (MIT metadata matches LICENSE), `README.md`.
-- Release documents: `docs/RELEASE_GAP_AUDIT.md`, this progress file, `docs/DEMO_SCRIPT.md`, `docs/DEVPOST_SUBMISSION.md`.
-- Preexisting AGENTS/audit/planning changes were preserved. No git commit was created.
+All tests used a 30-second model-turn budget and isolated test databases.
 
-## Scope boundaries and remaining risks
+| Check | Exact result |
+| --- | --- |
+| Task drafting with requested `gemini-2.5-flash` | 1 failed, 14 deselected, 2 warnings in 3.13s; Google HTTP 404: model no longer available to new users |
+| Task drafting with `gemini-3.5-flash-lite` | 1 passed, 14 deselected, 2 warnings in 3.65s |
+| Read-tool inference with `gemini-3.5-flash-lite` | 1 passed, 38 deselected, 2 warnings in 9.51s |
+| Strict live calendar smoke with `gemini-3.5-flash-lite` | 1 passed, 2 deselected, 2 warnings in 15.31s |
 
-The reproducible offline demo is implemented and tested; the original prompt's full ambition is **not 100% complete**. Free-form new-task extraction is unfinished: task creation uses explicit controls in both providers. The offline planner has fixed 09:00-17:00 hours, same-day requests and contiguous greedy placement; it safely rejects some requests that a more flexible solver could fit. Scheduled tasks cannot be directly edited/removed, there is no completion control, and no workspace-history picker or production authentication exists. These limits are stated in README and submission copy. Successful live Gemini inference, fresh-machine dependency installation, public hosting, repository publication, video upload and final submission are not claimed.
+The requested source default remains `gemini-2.5-flash`; the ignored local
+`.env` selects the verified `gemini-3.5-flash-lite` override. Credentials remain
+in the environment. No keys were printed or added to tracked files.
 
-The next human action is to rehearse `docs/DEMO_SCRIPT.md`, record and publicly upload the actual flow, review repository access and the submission placeholders, then complete Devpost's final submission before the official deadline.
+A stricter live calendar test exposed a model omission of a saved task.
+Whole-day requests now use the shared scheduler through `propose_schedule`,
+ensuring complete task coverage and preferences. Custom task-selection requests
+continue to use validated custom proposals. The final live smoke requires
+Gemini itself, a real proposal and successful invariant checks; fallback alone
+cannot satisfy it.
 
+## Browser evidence
 
-## Personal day planner update
+- `python scripts/browser_personal_days.py --url http://127.0.0.1:8017`: PASS.
+  Empty start, guided planning, review/reload/cancel/confirm, named interruption,
+  weekday routines, day isolation, persistence and 320–1440px layouts.
+- `python scripts/browser_voice.py --url http://127.0.0.1:8017`: PASS.
+  Simulated recognition, intercepted inference, empty-day setup, pending-task
+  Gemini dispatch, tool trace display, speech lifecycle and permission errors.
+- `python scripts/browser_upgrades.py --url http://127.0.0.1:8017`: PASS.
+  MCP task/calendar review links, UI-only confirmation, deterministic typed
+  planning, expanded tool trace, preference save/forget/reload, trace clearing
+  across dates and 320–1440px layouts including expanded proposal details.
 
-- Replaced automatic demo initialization with an empty personal workspace and isolated, persisted date sessions. Retained existing data and legacy seeded API routes.
-- Removed execution trace UI. Plan my day opens setup; interruptions require a user-supplied name and time interval.
-- Added SQLite-backed weekday routines with multi-task input, start date, stop control, per-day deduplication, and deferred application during pending proposal review.
-- Kept black-and-white pixel styling. Date picker computes weekdays and preserves selected day on refresh.
-- Verified: 206 backend tests passed, 2 live-provider tests skipped; frontend production build and OpenAPI contract passed. New browser_personal_days.py passed guided planning, approval/cancel/reload, named interruption, routine weekday matching, day isolation, no duplicates, no browser exceptions and 320-1440px overflow checks.
-- Bounds: 09:00-17:00 planner; routine tasks populate when matching days are opened; routine times remain flexible until a plan is approved. No background scheduler, notifications or cross-device login.
+Browser screenshots are in ignored `data/upgrades/` and `data/personal-days/`.
+A physical microphone and actual remote speech-recognition service were not
+tested. The verification server used an isolated SQLite database and was stopped
+after testing.
+
+## Scope and safeguards
+
+- MCP Streamable HTTP implements JSON responses for POST, initialization,
+  notification acknowledgement, ping, tools/list and tools/call. GET streams and
+  DELETE termination return the spec-permitted 405. Tests cover headers, origins,
+  malformed requests, session selectors, concurrent drafts and COMMIT rejection.
+- MCP and Gemini expose READ/PROPOSE plus an explicit PREFERENCE tier. Preference
+  writes affect only memory and state version. Tasks and calendar change only
+  through UI confirmation.
+- Scheduling preserves full task duration. Primary hours remain 09:00–17:00;
+  long work can split into chunks of at least 30 minutes before evening overflow,
+  with a maximum flexible-work bound of 21:00 and hard deadlines.
+- Partial updates preserve omitted/null priority and category; explicit deadline
+  null clears the deadline. Protected work stays immutable.
+- UTF-8 scanning covers source, tests, scripts, skills and public documents.
+  The named UI glyphs were already clean when this session began.
+- The empty root `flowpilot.db` was verified as zero bytes and removed.
+  OpenAPI and generated TypeScript are synchronized.
+- The local MCP server and Agent Skill are implemented. Remote Alexa+ account
+  onboarding, OAuth, external calendar sync, deployment and certification have
+  not been performed. This remains a local single-user prototype.
+- The final pass includes the loading text, initial speech guard, interim speech
+  fallback, repeat-confirm rollback, partial-update inheritance and Gemini SDK
+  dependency. Draft tests cover pending lookup, atomic rollback, idempotency,
+  cancellation, session isolation and mocked clarification-to-draft tool calls.
+- The three named internal root prompts/audits are removed. Local repository
+  dumps are ignored, and existing application changes are included in the
+  submission commit. Publication follows the successful verification gates.
+  Video upload and final Devpost submission remain entrant actions.

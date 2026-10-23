@@ -120,6 +120,15 @@ html body { background: #1d1d1d; background-image: none; }
 .pixel-dashboard .tool-trace__count { background: #2c2c2c; color: #dadada; font-size: 13px; }
 .pixel-dashboard .tool-trace__panel, .pixel-dashboard .tool-trace__item { background: #121212; color: #bbbbbb; border-color: #454545; }
 .pixel-dashboard .tool-trace code { color: #eee; }
+.pixel-dashboard .tool-trace__item-header code, .pixel-dashboard .tool-trace pre { background: #0b0b0b; }
+.pixel-dashboard .tool-trace dt, .pixel-dashboard .tool-trace__item-header > span, .pixel-dashboard .tool-trace__empty { color: #aaa; }
+.pixel-dashboard .linked-session a { color: #ddd; text-decoration: underline; }
+.pixel-dashboard .tool-trace, .pixel-dashboard .tool-trace__toggle, .pixel-dashboard .tool-trace__count,
+.pixel-dashboard .tool-trace__item, .pixel-dashboard .tool-trace pre { border-radius: 0; }
+.pixel-dashboard .memory-indicator { border: 1px solid #444; border-radius: 0; background: #111; color: #ddd; width: 100%; }
+.pixel-dashboard .memory-indicator ul { padding-left: 20px; margin-bottom: 0; }
+.pixel-dashboard .memory-indicator li { margin: 8px 0; }
+.pixel-dashboard .memory-indicator button { margin-left: 12px; border: 1px solid #555; background: #171717; color: #ddd; font: inherit; cursor: pointer; }
 .pixel-dashboard .schedule-zone { border: 1px solid #484848; background: #292929; padding: 20px; backdrop-filter: none; scroll-margin-top: 20px; }
 .pixel-dashboard .eyebrow, .pixel-dashboard .day-heading > span { color: #a8a8a8; font-size: 13px; letter-spacing: .03em; }
 .pixel-dashboard .zone-switcher { background: transparent; border: 0; border-bottom: 1px solid #3f3f3f; padding: 0; gap: 18px; }

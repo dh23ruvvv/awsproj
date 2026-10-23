@@ -1,0 +1,47 @@
+{
+  "$schema": "https://repomix.com/schemas/latest/schema.json",
+  "include": [
+    "server/**",
+    "frontend/src/**",
+    "frontend/index.html",
+    "frontend/package.json",
+    "frontend/package-lock.json",
+    "frontend/tsconfig.json",
+    "frontend/tsconfig.app.json",
+    "frontend/tsconfig.node.json",
+    "frontend/vite.config.ts",
+    "tests/**",
+    "docs/**",
+    "scripts/**",
+    "generated/**",
+    ".internal/**",
+    "*.md",
+    "*.json",
+    "*.txt",
+    ".env.example",
+    ".gitignore",
+    "LICENSE",
+    "requirements.txt",
+    "requirements-dev.txt"
+  ],
+  "ignore": {
+    "useGitignore": false,
+    "useDefaultPatterns": true,
+    "customPatterns": [
+      ".test-tmp-*",
+      ".test-tmp-*/**",
+      "node_modules",
+      "node_modules/**",
+      ".git",
+      ".git/**",
+      ".next/**",
+      ".cache/**",
+      "frontend/dist/**",
+      "frontend/node_modules/**",
+      "__pycache__/**",
+      ".pytest_cache/**",
+      "codebase.txt",
+      "repomix-output.xml"
+    ]
+  }
+}

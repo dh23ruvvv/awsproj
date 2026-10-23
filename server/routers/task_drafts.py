@@ -58,6 +58,7 @@ def confirm(sid: str, did: str, request: TaskDraftConfirmation):
         draft = find(db, sid, did)
         session = db.execute('SELECT * FROM sessions WHERE id=?', (sid,)).fetchone()
         if draft['status'] == 'CONFIRMED':
+            db.rollback()
             return {'state_version': session['state_version'], 'already_confirmed': True}
         if draft['status'] != 'PROPOSED':
             raise HTTPException(409, 'This task draft is no longer awaiting approval')
@@ -94,11 +95,15 @@ def cancel(sid: str, did: str):
     """Discard a draft without changing tasks or the calendar."""
     db = get_connection()
     try:
-        with db:
-            draft = find(db, sid, did)
-            if draft['status'] == 'CONFIRMED':
-                raise HTTPException(409, 'This task draft has already been confirmed')
-            db.execute("UPDATE task_drafts SET status='CANCELLED' WHERE id=?", (did,))
+        db.execute('BEGIN IMMEDIATE')
+        find(db, sid, did)
+        cursor = db.execute("UPDATE task_drafts SET status='CANCELLED' WHERE id=? AND session_id=? AND status='PROPOSED'", (did, sid))
+        if cursor.rowcount != 1:
+            raise HTTPException(409, 'This task draft is no longer awaiting approval')
+        db.commit()
         return {'cancelled': True}
+    except Exception:
+        db.rollback()
+        raise
     finally:
         db.close()

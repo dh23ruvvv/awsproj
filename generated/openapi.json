@@ -47,7 +47,7 @@
     "/api/v1/sessions/{sid}": {
       "delete": {
         "summary": "Reset Session",
-        "description": "Atomically clear and re-seed a session, allowing one reset per five seconds.",
+        "description": "Atomically reset a session, reseeding only originally seeded demos, allowing one reset per five seconds.",
         "operationId": "reset_session_api_v1_sessions__sid__delete",
         "parameters": [
           {
@@ -322,6 +322,180 @@
         }
       }
     },
+    "/api/v1/sessions/{sid}/context": {
+      "get": {
+        "summary": "Get Session Context",
+        "operationId": "get_session_context_api_v1_sessions__sid__context_get",
+        "parameters": [
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Sid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionInfoResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/{sid}/memory": {
+      "post": {
+        "summary": "Save Memory",
+        "operationId": "save_memory_api_v1_sessions__sid__memory_post",
+        "parameters": [
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Sid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreferenceInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreferenceResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "Get Memory Data",
+        "description": "Return memory entries belonging to the session and state version.",
+        "operationId": "get_memory_data_api_v1_sessions__sid__memory_get",
+        "parameters": [
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Sid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemoryResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/{sid}/memory/{mid}": {
+      "delete": {
+        "summary": "Delete Memory",
+        "operationId": "delete_memory_api_v1_sessions__sid__memory__mid__delete",
+        "parameters": [
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Sid"
+            }
+          },
+          {
+            "name": "mid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeletePreferenceResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/sessions/{sid}/schedule": {
       "get": {
         "summary": "Get Schedule Data",
@@ -432,46 +606,6 @@
             "content": {
               "application/json": {
                 "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/sessions/{sid}/memory": {
-      "get": {
-        "summary": "Get Memory Data",
-        "description": "Return memory entries belonging to the session and state version.",
-        "operationId": "get_memory_data_api_v1_sessions__sid__memory_get",
-        "parameters": [
-          {
-            "name": "sid",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Sid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MemoryResponse"
-                }
               }
             }
           },
@@ -1074,6 +1208,94 @@
           }
         }
       }
+    },
+    "/mcp": {
+      "get": {
+        "summary": "Unsupported Stream",
+        "operationId": "unsupported_stream_mcp_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Post Mcp",
+        "operationId": "post_mcp_mcp_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Unsupported Stream",
+        "operationId": "unsupported_stream_mcp_delete",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mcp": {
+      "get": {
+        "summary": "Unsupported Stream",
+        "operationId": "unsupported_stream_api_v1_mcp_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Post Mcp",
+        "operationId": "post_mcp_api_v1_mcp_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Unsupported Stream",
+        "operationId": "unsupported_stream_api_v1_mcp_delete",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1298,6 +1520,24 @@
         "title": "DayRequest",
         "description": "Select a local calendar date and its UTC offset in minutes."
       },
+      "DeletePreferenceResponse": {
+        "properties": {
+          "deleted": {
+            "type": "boolean",
+            "title": "Deleted"
+          },
+          "state_version": {
+            "type": "integer",
+            "title": "State Version"
+          }
+        },
+        "type": "object",
+        "required": [
+          "deleted",
+          "state_version"
+        ],
+        "title": "DeletePreferenceResponse"
+      },
       "ExecutionLogResponse": {
         "properties": {
           "entries": {
@@ -1417,6 +1657,46 @@
         ],
         "title": "PlanResponse",
         "description": "Represent the documented Plan details response."
+      },
+      "PreferenceInput": {
+        "properties": {
+          "preference": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Preference"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "preference"
+        ],
+        "title": "PreferenceInput"
+      },
+      "PreferenceResponse": {
+        "properties": {
+          "entry": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Entry"
+          },
+          "state_version": {
+            "type": "integer",
+            "title": "State Version"
+          },
+          "saved": {
+            "type": "boolean",
+            "title": "Saved"
+          }
+        },
+        "type": "object",
+        "required": [
+          "entry",
+          "state_version",
+          "saved"
+        ],
+        "title": "PreferenceResponse"
       },
       "RoutineRequest": {
         "properties": {
@@ -1547,6 +1827,36 @@
         "type": "object",
         "title": "SessionCreateRequest",
         "description": "Represent the documented SessionCreateRequest contract."
+      },
+      "SessionInfoResponse": {
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "title": "Timestamp"
+          },
+          "state_version": {
+            "type": "integer",
+            "title": "State Version"
+          },
+          "pending_plan_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pending Plan Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "timestamp",
+          "state_version",
+          "pending_plan_id"
+        ],
+        "title": "SessionInfoResponse"
       },
       "SessionResetResponse": {
         "properties": {

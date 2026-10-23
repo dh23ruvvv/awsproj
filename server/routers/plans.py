@@ -88,7 +88,9 @@ def cancel_plan(sid: str, pid: str):
         with db:
             db.execute("BEGIN IMMEDIATE")
             find_plan(db, sid, pid)
-            db.execute("UPDATE plans SET status='CANCELLED' WHERE id=? AND session_id=? AND status='PROPOSED'", (pid, sid))
+            cursor = db.execute("UPDATE plans SET status='CANCELLED' WHERE id=? AND session_id=? AND status='PROPOSED'", (pid, sid))
+            if cursor.rowcount != 1:
+                raise PlanError(409, "PLAN_NOT_PROPOSED", "This plan is no longer awaiting approval")
             version = db.execute("SELECT state_version FROM sessions WHERE id=?", (sid,)).fetchone()[0]
         return {"cancelled": True, "state_version": version}
     except PlanError as exc:

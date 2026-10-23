@@ -79,11 +79,13 @@ def propose_commitment(sid: str, request: CommitmentRequest):
         else:
             # Try to replan colliding movable tasks around the new commitment
             try:
-                blocks = compute_replan(existing, event, current_clock)
+                tasks = [dict(row) for row in db.execute('SELECT * FROM tasks WHERE session_id=?', (sid,))]
+                blocks = compute_replan(existing, event, current_clock, tasks=tasks)
                 explanation = f"Review the new fixed commitment '{event['title']}' and any moved tasks. Confirm to save."
             except ValueError:
                 # If movable tasks cannot be rescheduled within working hours, displace them to pending
-                blocks = sorted([b for b in existing if b not in overlapping_movables] + [event], key=lambda b: _time(b["start_time"]))
+                displaced_tasks = {b.get('task_id') for b in overlapping_movables if b.get('task_id')}
+                blocks = sorted([b for b in existing if b not in overlapping_movables and b.get('task_id') not in displaced_tasks] + [event], key=lambda b: _time(b["start_time"]))
                 titles = ", ".join(f"'{b['title']}'" for b in overlapping_movables)
                 explanation = f"Added fixed event '{event['title']}'. Displaced {titles} and returned to your task list."
 

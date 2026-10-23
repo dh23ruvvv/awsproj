@@ -5,7 +5,9 @@ Write-Host "`n===============================================" -ForegroundColor 
 Write-Host " Running FlowPilot Golden Smoke Test..." -ForegroundColor Cyan
 Write-Host "===============================================`n" -ForegroundColor Cyan
 
-python -m pytest tests/test_golden_smoke.py -v -p no:cacheprovider --basetemp .test-tmp-smoke
+# Let pytest allocate a fresh temporary directory on each run. A fixed Windows
+# basetemp can retain permissions from an earlier sandbox or another process.
+python -m pytest tests/test_golden_smoke.py -v -p no:cacheprovider
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Golden Smoke Test FAILED"
     exit 1

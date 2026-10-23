@@ -1,5 +1,6 @@
-fastapi
-uvicorn
-pydantic>=2
-pydantic-settings
-jsonschema
+fastapi==0.157.0
+uvicorn==0.54.0
+pydantic==2.14.1
+pydantic-settings==2.16.1
+jsonschema==4.26.0
+google-genai==2.32.0

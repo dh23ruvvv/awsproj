@@ -110,5 +110,8 @@ async def agent_message(
             provider_used=result.provider_used, degraded=result.degraded,
             tool_trace=result.tool_trace,
         )
+    except sqlite3.OperationalError:
+        connection.rollback()
+        return _error(409, "STATE_CONFLICT", "Workspace changed while planning. Refresh and try again.")
     finally:
         connection.close()

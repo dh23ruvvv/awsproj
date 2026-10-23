@@ -1,13 +1,35 @@
 """Expose session-scoped data retrieval endpoints per Architecture §5.4."""
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from server.database import get_connection
+from server.clock import now
 from server.tools import read_tools
+from server.tools.preferences import PreferenceInput, remember_preference
 
 router = APIRouter()
+
+
+class SessionInfoResponse(BaseModel):
+    timestamp: str
+    state_version: int
+    pending_plan_id: str | None
+
+
+@router.get('/sessions/{sid}/context', response_model=SessionInfoResponse)
+def get_session_context(sid: str):
+    db = get_connection()
+    try:
+        err = _check_session(db, sid)
+        if err:
+            return err
+        session = db.execute('SELECT * FROM sessions WHERE id=?', (sid,)).fetchone()
+        plan = db.execute("SELECT id FROM plans WHERE session_id=? AND status='PROPOSED' ORDER BY created_at DESC LIMIT 1", (sid,)).fetchone()
+        return {'timestamp': now(session['demo_timestamp']), 'state_version': session['state_version'], 'pending_plan_id': plan['id'] if plan else None}
+    finally:
+        db.close()
 
 
 class ScheduleResponse(BaseModel):
@@ -35,6 +57,49 @@ class ExecutionLogResponse(BaseModel):
     """Represent execution log entries."""
 
     entries: list[dict]
+
+
+class PreferenceResponse(BaseModel):
+    entry: dict
+    state_version: int
+    saved: bool
+
+
+class DeletePreferenceResponse(BaseModel):
+    deleted: bool
+    state_version: int
+
+
+@router.post('/sessions/{sid}/memory', response_model=PreferenceResponse, status_code=201)
+def save_memory(sid: str, request: PreferenceInput):
+    db = get_connection()
+    try:
+        with db:
+            db.execute('BEGIN IMMEDIATE')
+            err = _check_session(db, sid)
+            if err:
+                return err
+            return remember_preference(sid, request.model_dump(), db)
+    finally:
+        db.close()
+
+
+@router.delete('/sessions/{sid}/memory/{mid}', response_model=DeletePreferenceResponse)
+def delete_memory(sid: str, mid: str):
+    db = get_connection()
+    try:
+        with db:
+            db.execute('BEGIN IMMEDIATE')
+            err = _check_session(db, sid)
+            if err:
+                return err
+            deleted = db.execute('DELETE FROM memory WHERE id=? AND session_id=?', (mid, sid))
+            if not deleted.rowcount:
+                raise HTTPException(404, 'Preference not found')
+            db.execute('UPDATE sessions SET state_version=state_version+1 WHERE id=?', (sid,))
+            return {'deleted': True, 'state_version': db.execute('SELECT state_version FROM sessions WHERE id=?', (sid,)).fetchone()[0]}
+    finally:
+        db.close()
 
 
 def _check_session(db, sid: str) -> JSONResponse | None:

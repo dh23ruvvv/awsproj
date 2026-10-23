@@ -77,6 +77,59 @@ def test_tool_execution_and_prompt(context, sdk):
     assert contents[2].parts[0].function_response.response["tasks"]
 
 
+def test_snapshot_allows_immediate_proposal(context, sdk):
+    sdk.side_effect = [response("propose_schedule", {"blocks": [], "explanation": "Plan saved tasks"}), response()]
+    result = asyncio.run(GeminiProvider().run_agent_turn("Plan my day", context))
+    assert result.has_proposal and sdk.await_count == 2
+    sent = sdk.call_args.kwargs['contents'][0].parts[0].text
+    assert '<session_snapshot>' in sent and 'calendar_blocks' in sent and 'memory' in sent
+    assert 'Team standup' in sent
+    assert 'Available tools and schemas' not in sdk.call_args.kwargs['config'].system_instruction
+
+
+def test_valid_proposal_survives_reply_timeout(context, sdk):
+    sdk.side_effect = [response("propose_schedule", {"blocks": [], "explanation": "Plan"}), TimeoutError()]
+    result = asyncio.run(GeminiProvider().run_agent_turn("Plan my day", context))
+    assert result.has_proposal and not result.degraded and 'confirm' in result.response
+
+
+def test_gemini_remembers_only_explicit_user_preferences(context, sdk):
+    before = [dict(row) for row in context.db_conn.execute('SELECT * FROM tasks')]
+    sdk.side_effect = [response('remember_preference', {'preference': 'Deep work in the morning'}), response(text='Remembered.')]
+    result = asyncio.run(GeminiProvider().run_agent_turn('Remember: deep work in the morning', context))
+    assert not result.has_proposal and result.state_version == 2
+    assert context.db_conn.execute('SELECT value FROM memory').fetchone()[0] == 'Deep work in the morning'
+    assert [dict(row) for row in context.db_conn.execute('SELECT * FROM tasks')] == before
+
+
+def test_gemini_cannot_invent_preferences(context, sdk):
+    sdk.side_effect = [response('remember_preference', {'preference': 'Made up preference'})] * 2
+    with pytest.raises(ValueError, match='explicit user request'):
+        asyncio.run(GeminiProvider().run_agent_turn('Plan my day', context))
+    assert context.db_conn.execute('SELECT count(*) FROM memory').fetchone()[0] == 0
+
+
+def test_whole_day_cannot_silently_omit_pending_tasks(context, sdk):
+    import json
+    sdk.side_effect = [response('propose_schedule', {'blocks': [{
+        'title': 'Only some work', 'start_time': '2026-10-22T09:00:00+05:30',
+        'end_time': '2026-10-22T09:30:00+05:30'}], 'explanation': 'Plan'}), response()]
+    result = asyncio.run(GeminiProvider().run_agent_turn('Plan my day', context))
+    blocks = json.loads(context.db_conn.execute('SELECT proposed_blocks FROM plans WHERE id=?', (result.plan_id,)).fetchone()[0])
+    expected = {row['id'] for row in context.db_conn.execute('SELECT id FROM tasks')}
+    assert {block.get('task_id') for block in blocks if block.get('task_id')} == expected
+    assert result.tool_trace[0]['args']['blocks'] == []
+    assert json.loads(result.tool_trace[0]['result_summary'])['computed_from_saved_tasks']
+
+
+def test_explicit_task_selection_is_not_expanded(context, sdk):
+    from server.tools.read_tools import get_calendar
+    original = get_calendar(context.session_id, {}, context.db_conn)['blocks']
+    sdk.side_effect = [response('propose_schedule', {'blocks': original, 'explanation': 'Keep commitments only'}), response()]
+    result = asyncio.run(GeminiProvider().run_agent_turn('Schedule only my fixed commitments; omit pending work today', context))
+    assert result.tool_trace[0]['args']['blocks'] == original
+
+
 def test_repair_malformed_arguments(context, sdk):
     """One schema error is returned to Gemini and a corrected call executes."""
     sdk.side_effect = [response("get_tasks", {"unknown": True}),
@@ -88,21 +141,21 @@ def test_repair_malformed_arguments(context, sdk):
     assert "validation_error" in sdk.call_args.kwargs["contents"][2].parts[0].function_response.response
 
 
-def test_repeated_bad_args_fall_back(context, sdk):
-    """A second invalid tool call exhausts repair and returns deterministic output."""
+def test_repeated_bad_args_refuse_without_outage(context, sdk):
+    """A second invalid tool call refuses the request without an outage fallback."""
     sdk.side_effect = [response("get_tasks", {"unknown": True})] * 2
     provider = FallbackProvider(GeminiProvider(), DeterministicProvider())
-    result = asyncio.run(provider.run_agent_turn("hello", context))
-    assert result.degraded and result.provider_used == "gemini-fallback"
-    assert sdk.await_count == 2 and provider.failure_count == 1
+    with pytest.raises(ValueError):
+        asyncio.run(provider.run_agent_turn("hello", context))
+    assert sdk.await_count == 2 and provider.failure_count == 0
 
 
 @pytest.mark.parametrize("name", ["commit_schedule", "delete_everything"])
 def test_unauthorized_tools_cannot_execute(context, sdk, name):
     """Even fabricated function calls cannot commit or delete domain data."""
     sdk.side_effect = [response(name, {})] * 2
-    result = asyncio.run(FallbackProvider(GeminiProvider(), DeterministicProvider()).run_agent_turn("hello", context))
-    assert result.degraded
+    with pytest.raises(ValueError):
+        asyncio.run(FallbackProvider(GeminiProvider(), DeterministicProvider()).run_agent_turn("hello", context))
     assert context.db_conn.execute("SELECT state_version FROM sessions").fetchone()[0] == 1
     assert context.db_conn.execute("SELECT count(*) FROM plans").fetchone()[0] == 0
 

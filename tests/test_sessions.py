@@ -120,7 +120,8 @@ def test_reset_rate_limit_boundary(client, monkeypatch):
     monkeypatch.setattr(sessions, "monotonic", lambda: 100.0)
     sid = client.post("/api/v1/sessions", json={"seed": False}).json()["session_id"]
     assert client.delete(f"/api/v1/sessions/{sid}").status_code == 200
-    assert_seeded(sid)
+    assert rows("tasks", sid) == []
+    assert rows("calendar_blocks", sid) == []
     monkeypatch.setattr(sessions, "monotonic", lambda: 104.999)
     response = client.delete(f"/api/v1/sessions/{sid}")
     assert response.status_code == 429

@@ -43,5 +43,5 @@ A finishable, demo-reliable product beats a complex, broken one.
 
 - Windows, PowerShell 5.1
 - Python 3.14.6, Node 24.16.0, npm 12.2.0, Git 2.52.0
-- Codex CLI installed at `C:\Users\dhruv\AppData\Local\Programs\OpenAI\Codex\bin\codex.exe`
+- Codex CLI installed at `<local-installation-path>`
 - No Docker, no Kubernetes, near-zero budget

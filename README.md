@@ -1,8 +1,8 @@
-﻿# FlowPilot
+# FlowPilot
 
-An Alexa+-inspired web simulation that plans a day, explains proposed changes, and waits for your approval before updating the calendar.
+An approval-first day planner for the Alexa+ track of Build, Ship, Shape: Amazon Developer Hackathon. Plan a day, replan around interruptions, and review every task or calendar change before saving.
 
-**Reproducible demo:** React + FastAPI + SQLite, with a clearly labeled offline planner. An optional Gemini tool-calling provider is available. No official Alexa+ integration, external calendar account, or AWS deployment is claimed.
+**Two included surfaces:** a Simulated Alexa+ Multimodal Web Experience (React, voice and text) and a Self-Hosted Streamable HTTP MCP Server at `/mcp` (protocol `2025-11-25`, alias `/api/v1/mcp`). Both use FastAPI, SQLite and the same validated tool registry. The [Agent Skill](skills/flowpilot-scheduler/SKILL.md) describes tool bindings and the approval workflow. Local MCP support is implemented; Amazon account onboarding and certification are separate deployment steps.
 
 ## Run locally on Windows PowerShell
 
@@ -38,9 +38,9 @@ Open http://localhost:5173. Vite proxies `/api` to port 8000. `npm.cmd` avoids e
 5. Choose **Fixed plan / routine**. Enter a routine name, select weekdays (for example Tuesday, Saturday and Sunday), and add one or more tasks with durations. Starting on the selected date, each matching day receives those tasks once when opened. Reopening or refreshing never duplicates them. Scheduling still requires a reviewed plan.
 6. **Stop routine** prevents new occurrences and preserves already created tasks. A task removed from a particular day is not recreated by the routine. Days with a pending proposal defer routine generation until that proposal is resolved and the day is reopened.
 
-The current scheduler allocates within **09:00-17:00** in each day's displayed timezone. Personal days use the selected date at 09:00 as the planning origin, allowing deliberate whole-day planning, including historical days; this is not a real-time reminder service. The browser supplies the UTC offset for the chosen date. Routines populate when a matching day is opened; no background service or notifications are implied. Routine tasks have flexible times; use fixed events for exact time commitments. Workspace IDs are kept in this browser, while tasks, routines and day mappings persist in SQLite. There is no cross-device account system.
+The scheduler prefers **09:00-17:00**, with overflow up to **21:00** when needed and allowed by deadlines. It tries a full contiguous slot first. When that cannot fit, tasks longer than 60 minutes can span free gaps in chunks of at least 30 minutes, retaining the exact total duration. Tasks of 60 minutes or less stay contiguous. Fixed commitments and completed work stay protected. Personal days use the selected date at 09:00 as the planning origin. Routines populate once when matching dates are opened. Workspace IDs stay in this browser; tasks, routines and day mappings persist in SQLite.
 
-The offline planner understands a small documented command set. Use task controls for new task details; it will explain its limitations if given a free-form task paragraph. It supports explicit same-day interruption ranges or `at 2 PM for 30 minutes`, in the schedule's displayed timezone.
+The offline planner understands `Plan my day`, `What's left?`, explicit interruptions such as `Replan around Client Demo from 2:00 to 2:45 PM`, and `Remember: I prefer personal tasks in the afternoon`. Preferences are saved for the selected day and shown with a **Forget** control. Recognized morning work, afternoon personal, and explicit after-time preferences guide flexible placement; deadlines and fixed commitments take precedence. Other preference text is retained for the agent. Preferences are never fabricated from event titles. The expandable **Tool Execution Trace** shows tool arguments, results and durations in milliseconds after each turn.
 
 See [the timed demo script](docs/DEMO_SCRIPT.md) for a recording walkthrough, including an optional protected client-meeting setup. The video must still be recorded and uploaded by the entrant.
 
@@ -71,14 +71,39 @@ Diffs identify unchanged, moved, added, removed, shortened and lengthened blocks
 | --- | --- |
 | `FLOWPILOT_DB_PATH` | `./data/flowpilot.db`; local SQLite file |
 | `FLOWPILOT_DEFAULT_PROVIDER` | `deterministic`; optional `gemini` |
+| `FLOWPILOT_GEMINI_MODEL` | `gemini-2.5-flash`; override with a model available to your key |
 | `GEMINI_API_KEY` | Blank for offline use; never commit a real key |
 | `FLOWPILOT_DEMO_TIMESTAMP` | Legacy seeded API demo clock; personal days use their selected date |
-| `FLOWPILOT_LLM_TIMEOUT_S` | 15-second model-turn budget |
+| `FLOWPILOT_LLM_TIMEOUT_S` | 30-second model-turn budget |
 | `FLOWPILOT_CORS_ORIGINS` | `http://localhost:5173` |
 
-`requirements-dev.txt` includes the Gemini SDK and test tools. For an offline runtime alone, `requirements.txt` is sufficient. To try live inference, configure your key and choose **Use Gemini**. The badge reports the provider that actually answered; outages or missing credentials use a labeled fallback. Live API use may incur your provider's charges. Successful real Gemini inference was not verified in this release session; mocked tool-calling, failure and fallback paths were tested.
+`requirements.txt` includes the Gemini SDK and pinned runtime dependencies; `requirements-dev.txt` adds test tools. Configure your key and choose **Use Gemini**. The badge reports the provider that answered; outages or missing credentials use a labeled fallback. The provider supplies tasks, committed calendar, clock and preferences in the initial turn context, with one copy of tool schemas and a bounded total timeout.
 
-The live provider can reason over saved tasks and propose blocks. New tasks are entered through task controls in either mode. No voice input, MCP server, Alexa account connection, external calendar synchronization or cloud service is implemented.
+For the tested API key, use `FLOWPILOT_GEMINI_MODEL=gemini-3.5-flash-lite`: live task drafting and read-tool inference passed with this override. Google returned HTTP 404 for the requested `gemini-2.5-flash` default because it is no longer available to new users. See [Google's model catalog](https://ai.google.dev/gemini-api/docs/models) and choose a model available to your account.
+
+The live provider can read saved tasks, propose task additions/partial edits/removals, and propose calendar changes. Missing details can be supplied in a follow-up message. Task drafts are reviewed separately from scheduling and persist across refresh. Neither provider can commit changes directly.
+
+**Speak to Gemini** uses browser Web Speech recognition, switches the selected planner to Gemini, and leaves an editable transcript. Enable **Send after speaking** to submit automatically after recognition ends. **Read replies aloud** uses browser speech synthesis for new replies only. Speech languages include English (India/US) and Hindi; availability depends on the browser's speech service. Microphone permission, localhost or HTTPS, and a compatible browser are needed. Unsupported browsers retain typed input. The browser's recognition service may process audio; FlowPilot sends text to Gemini. A missing key or provider outage produces a labeled deterministic fallback with limited commands. Domain validation refusals are reported directly and do not count as provider outages.
+
+Microphone input cannot approve changes. Use visible confirmation controls after reviewing the draft. Typed or spoken planning with pending tasks reaches the active provider; empty days open guided setup. The project has no external calendar synchronization or background reminder service.
+
+## Use the MCP server
+
+The same local start command serves `http://127.0.0.1:8000/mcp`. In an MCP inspector, choose **Streamable HTTP** and this URL. `initialize` negotiates `2025-11-25`; retain its `Mcp-Session-Id` and send `notifications/initialized`. Subsequent requests use `MCP-Protocol-Version: 2025-11-25`. POST with `Content-Type: application/json` and `Accept: application/json, text/event-stream`. Responses use JSON; optional standalone GET streams and DELETE termination return 405. Invalid origins are rejected. See the [transport specification](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports).
+
+`tools/list` exposes five READ tools, three PROPOSE tools and `remember_preference`. `commit_schedule` is blocked. Example `tools/call` body:
+
+```json
+{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"propose_task_changes","arguments":{"changes":[{"action":"add","title":"Prepare demo","duration_minutes":90}],"explanation":"Review this task before saving."}}}
+```
+
+Initialization creates an empty session. Bind an existing UI day with its session ID in `X-FlowPilot-Session-Id`, `Mcp-Session-Id`, or a tool's `session_id` argument. Conflicting selectors are rejected. Headerless inspector calls resolve a separate persistent default session. Tool results include the selected `session_id`.
+
+Proposals return a `review_path`. Open it on the FlowPilot origin to inspect and confirm or cancel in the web UI. Task confirmation and calendar confirmation remain separate. `propose_schedule` with `blocks: []` runs the scheduler, including preferences. `propose_replan` accepts the full proposed calendar. Partial task updates preserve omitted fields; explicit `deadline: null` clears a deadline.
+
+Preference storage is a separate safe tier: `remember_preference`, `POST /api/v1/sessions/{sid}/memory`, and `DELETE /api/v1/sessions/{sid}/memory/{mid}` only affect preference memory and versioning. They never mutate tasks or calendar blocks. Save a preference only on an explicit user request.
+
+The local prototype uses session IDs without sign-in. Remote Alexa+ onboarding requires hosting and the authentication/account-linking steps in [Amazon's MCP guide](https://developer.amazon.com/docs/alexaplus/add-ons/mcp-toolkit-quickstart); those deployment steps are not included in this local release.
 
 ## Verify
 
@@ -90,6 +115,8 @@ npm.cmd run smoke
 npm.cmd --prefix frontend run build
 npm.cmd run contract:check
 ```
+
+See [release verification](docs/RELEASE_PROGRESS.md) for exact command results, live-model checks and browser coverage.
 
 Unit/integration tests use isolated temporary databases. Real-provider tests are skipped unless you explicitly set `FLOWPILOT_RUN_LIVE_TESTS=1` and supply a key. There is no separate configured frontend lint command; the build includes `tsc --noEmit`.
 
@@ -108,22 +135,22 @@ In another terminal, from the repository root:
 python scripts/browser_personal_days.py --url http://127.0.0.1:8012
 ```
 
-The script creates its own session, checks real UI/API persistence and writes desktop/mobile screenshots under `data/browser-release/`. Those local screenshots are gitignored; regenerate them before sharing. Use `--channel msedge` if Edge is installed instead of Chrome.
+The script creates its own session, checks real UI/API persistence and writes desktop/mobile screenshots under `data/personal-days/`. Those local screenshots are gitignored; regenerate them before sharing.
 
 ## Current limits
 
-- One day, fixed 09:00–17:00 work window; full contiguous tasks. Greedy placement may reject requests that require splitting or rearranging earlier work. No multi-day planning or configurable work hours.
+- One selected day with preferred 09:00-17:00 hours and a 21:00 ceiling for flexible work. Greedy placement may reject a day that requires rearranging previously placed tasks. No automatic multi-day planning or configurable work hours.
 - Editing or removing a task already linked to the committed calendar is rejected; the UI exposes editing for pending tasks. There is no manual task-completion control yet.
-- Offline parsing is intentionally narrow. Free-form extraction of new tasks from a paragraph is unfinished. The live provider also has no task-creation tool.
+- Offline parsing is intentionally narrow; use task controls for new tasks. Gemini supports reviewed task creation, partial edits and removals, including clarification follow-ups.
 - Local prototype: a session identifier scopes access, but there is no sign-in or production authorization system. Public hosting needs a separate access/security review.
-- Browser refresh restores the current session and its locally remembered pending proposal. Deleting browser storage loses that pointer, not the database rows.
+- Browser refresh restores the current session and pending reviews. After an intentional database clean slate, a missing workspace ID is replaced with an empty personal workspace. Deleting browser storage loses that pointer, not the database rows.
 - Setup commands are documented and local start/build are verified. A fresh-machine Python dependency installation was not performed in this session.
 
 ## Release evidence and submission
 
 [Gap audit](docs/RELEASE_GAP_AUDIT.md), [progress and verification](docs/RELEASE_PROGRESS.md), [demo script](docs/DEMO_SCRIPT.md), [Devpost draft/checklist](docs/DEVPOST_SUBMISSION.md). Older architecture/task-board documents remain historical context and may describe the superseded pinned timetable.
 
-Review the [official event rules](https://amazonappdev2026.devpost.com/rules) personally. The intended primary track is the permitted simulated Alexa+ experience route. The entrant must supply an accessible repository, accurate English description and feedback, a public video shorter than three minutes, and complete Devpost's final submission action. No video upload, deployment, repository publication or Devpost submission was performed here.
+Review the [official event rules](https://amazonappdev2026.devpost.com/rules) personally. The intended primary track is the permitted simulated Alexa+ experience route. The entrant must supply an accessible repository, accurate English description and feedback, a public video shorter than three minutes, and complete Devpost's final submission action. The code was published to GitHub in the prior review checkpoint; video upload, deployment and Devpost submission remain entrant actions.
 
 ## License
 

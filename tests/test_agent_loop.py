@@ -47,7 +47,7 @@ def test_full_turn_one(client):
     assert body["provider_used"] == "deterministic"
     assert body["degraded"] is False
     assert [item["tool"] for item in body["tool_trace"]] == [
-        "get_tasks", "get_calendar", "get_current_time", "propose_schedule",
+        "get_tasks", "get_calendar", "get_current_time", "get_memory", "propose_schedule",
     ]
     connection = get_connection()
     try:

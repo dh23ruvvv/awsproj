@@ -14,8 +14,8 @@ class Settings(BaseSettings):
     flowpilot_cors_origins: str = "http://localhost:5173"
     gemini_api_key: str | None = None
     flowpilot_default_provider: str = "deterministic"
-    flowpilot_gemini_model: str | None = None
-    flowpilot_llm_timeout_s: int = 15
+    flowpilot_gemini_model: str = "gemini-2.5-flash"
+    flowpilot_llm_timeout_s: int = 30
     flowpilot_demo_timestamp: str | None = "2026-10-22T09:00:00+05:30"
     flowpilot_log_level: str = "INFO"
 

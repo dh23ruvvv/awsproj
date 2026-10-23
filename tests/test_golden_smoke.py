@@ -231,7 +231,8 @@ def test_golden_smoke_live_invariants(tmp_path, monkeypatch):
         turn_res = client.post(f"/api/v1/sessions/{sid}/agent/message", json={"message": t1_msg, "state_version": 1})
         assert turn_res.status_code == 200, turn_res.text
         data = turn_res.json()
-        assert data["provider_used"] in ("gemini", "gemini-fallback")
+        assert data["provider_used"] == "gemini" and not data['degraded']
+        assert data['has_proposal'] and data['plan_id']
         assert len(data["tool_trace"]) >= 1
 
         if data["has_proposal"] and data["plan_id"]:

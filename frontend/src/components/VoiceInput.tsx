@@ -21,7 +21,7 @@ export default function VoiceInput({ value, onChange, onSend, onStart, disabled,
   const [autoSend, setAutoSend] = useState(false);
   const [readAloud, setReadAloud] = useState(false);
   const [speaking, setSpeaking] = useState(false);
-  const lastSpoken = useRef('');
+  const lastSpoken = useRef(reply);
   useEffect(() => { onListeningChange(listening); }, [listening, onListeningChange]);
   const recognition = useRef<Recognition | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -43,7 +43,9 @@ export default function VoiceInput({ value, onChange, onSend, onStart, disabled,
   }, [disabled]);
 
   useEffect(() => {
-    if (!readAloud || listening || !reply || !window.speechSynthesis || lastSpoken.current === reply) return;
+    if (!reply) return;
+    if (!readAloud) { lastSpoken.current = reply; return; }
+    if (listening || !window.speechSynthesis || lastSpoken.current === reply) return;
     lastSpoken.current = reply;
     window.speechSynthesis.cancel();
     const speech = new SpeechSynthesisUtterance(reply.slice(0, 1500));
@@ -51,7 +53,6 @@ export default function VoiceInput({ value, onChange, onSend, onStart, disabled,
     speech.onstart = () => setSpeaking(true);
     speech.onend = speech.onerror = () => setSpeaking(false);
     window.speechSynthesis.speak(speech);
-    return () => { window.speechSynthesis.cancel(); setSpeaking(false); };
   }, [reply, readAloud, language, listening]);
 
   function start() {
@@ -62,11 +63,13 @@ export default function VoiceInput({ value, onChange, onSend, onStart, disabled,
     aborted.current = false;
     engine.lang = language; engine.continuous = false; engine.interimResults = true;
     let finalText = '';
+    let latestHeard = '';
     const prefix = value.trim();
     engine.onresult = event => {
       if (aborted.current) return;
       const results = Array.from(event.results);
       const heard = results.map(result => result[0].transcript).join(' ').trim();
+      latestHeard = heard;
       finalText = results.filter(result => result.isFinal).map(result => result[0].transcript).join(' ').trim();
       const text = [prefix, heard].filter(Boolean).join(' ');
       if (text.length > 1000) {
@@ -90,8 +93,9 @@ export default function VoiceInput({ value, onChange, onSend, onStart, disabled,
     engine.onend = () => {
       recognition.current = null; clearTimeout(timer.current); setListening(false);
       if (aborted.current) return;
-      if (!finalText) { setNotice('No final transcript received. Review the text or try again.'); return; }
-      const text = [prefix, finalText].filter(Boolean).join(' ');
+      const transcript = finalText || latestHeard;
+      if (!transcript) { setNotice('No transcript received. Try again or type your request.'); return; }
+      const text = [prefix, transcript].filter(Boolean).join(' ');
       callbacks.current.onChange(text);
       if (callbacks.current.autoSend && !callbacks.current.disabled) {
         setNotice('Transcript sent to Gemini. Any proposed changes still need your approval.');

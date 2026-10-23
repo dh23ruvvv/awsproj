@@ -32,7 +32,10 @@ def _propose(session_id: str, args: dict, db_conn: Connection, replan: bool) -> 
             tasks = [dict(row) for row in db_conn.execute(
                 "SELECT * FROM tasks WHERE session_id = ?", (session_id,)
             )]
-            blocks = compute_day_schedule(tasks, existing, current_time)
+            preferences = [dict(row) for row in db_conn.execute('SELECT * FROM memory WHERE session_id=?', (session_id,))]
+            blocks = compute_day_schedule(tasks, existing, current_time, preferences)
+    if db_conn.execute("SELECT 1 FROM task_drafts WHERE session_id=? AND status='PROPOSED'", (session_id,)).fetchone():
+        raise ValueError('Finish reviewing task changes before proposing a calendar')
     blocks = inherit_block_metadata(blocks, existing)
     errors = validate_schedule(blocks, existing, current_time)
     if errors:

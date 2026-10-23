@@ -1,6 +1,7 @@
 """Deterministic failover with a shared, time-based circuit breaker."""
 
 import time
+import sqlite3
 
 from .base import AgentContext, AgentTurnResult, Provider
 
@@ -21,6 +22,11 @@ class FallbackProvider:
             context.db_conn.execute("SAVEPOINT primary_provider")
             try:
                 result = await self.primary.run_agent_turn(message, context)
+            except (ValueError, sqlite3.OperationalError):
+                # Domain refusals and concurrency conflicts are not provider outages.
+                context.db_conn.execute("ROLLBACK TO SAVEPOINT primary_provider")
+                context.db_conn.execute("RELEASE SAVEPOINT primary_provider")
+                raise
             except Exception:
                 context.db_conn.execute("ROLLBACK TO SAVEPOINT primary_provider")
                 context.db_conn.execute("RELEASE SAVEPOINT primary_provider")

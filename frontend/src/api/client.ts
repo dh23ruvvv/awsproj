@@ -29,6 +29,14 @@ export interface ApiError {
 
 const BASE_URL = "/api/v1";
 
+export function getSessionInfo(sid: string): Promise<components['schemas']['SessionInfoResponse']> {
+  return request(`/sessions/${encodeURIComponent(sid)}/context`);
+}
+
+export function removePreference(sid: string, mid: string): Promise<components['schemas']['DeletePreferenceResponse']> {
+  return request(`/sessions/${encodeURIComponent(sid)}/memory/${encodeURIComponent(mid)}`, {method: 'DELETE'});
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const url = `${BASE_URL}${path}`;
   const headers = {

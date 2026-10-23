@@ -51,12 +51,14 @@ def create_session(request: SessionCreateRequest) -> SessionResponse:
 
 @router.delete("/sessions/{sid}", response_model=SessionResetResponse)
 def reset_session(sid: str) -> SessionResetResponse | JSONResponse:
-    """Atomically clear and re-seed a session, allowing one reset per five seconds."""
+    """Atomically reset a session, reseeding only originally seeded demos, allowing one reset per five seconds."""
     with _reset_lock:
         connection = get_connection()
         try:
             with connection:
-                if connection.execute("SELECT 1 FROM sessions WHERE id = ?", (sid,)).fetchone() is None:
+                connection.execute("BEGIN IMMEDIATE")
+                session = connection.execute("SELECT seeded FROM sessions WHERE id = ?", (sid,)).fetchone()
+                if session is None:
                     return _error(404, "NOT_FOUND", "Session not found.")
                 current = monotonic()
                 previous = _last_reset.get(sid)
@@ -70,7 +72,8 @@ def reset_session(sid: str) -> SessionResetResponse | JSONResponse:
                 connection.execute("DELETE FROM tasks WHERE session_id = ?", (sid,))
                 connection.execute("DELETE FROM memory WHERE session_id = ?", (sid,))
                 connection.execute("UPDATE sessions SET state_version = ? WHERE id = ?", (1, sid))
-                seed_session(connection, sid)
+                if session["seeded"]:
+                    seed_session(connection, sid)
             _last_reset[sid] = monotonic()
         finally:
             connection.close()

@@ -64,7 +64,7 @@ def test_golden_turns(scenario):
     first = turn(context, "Plan my day")
     assert first.response == PLAN_RESPONSE and first.has_proposal and first.state_version == 1
     assert [item["tool"] for item in first.tool_trace] == [
-        "get_tasks", "get_calendar", "get_current_time", "propose_schedule"]
+        "get_tasks", "get_calendar", "get_current_time", "get_memory", "propose_schedule"]
     blocks, _ = proposal(context, first)
     from datetime import datetime
     expected = {row["id"]: row["duration_minutes"] for row in context.db_conn.execute("SELECT * FROM tasks")}
@@ -80,9 +80,9 @@ def test_golden_turns(scenario):
                             ("2026-10-22T11:30:00+05:30", context.session_id))
     context.db_conn.commit()
     before = [dict(row) for row in context.db_conn.execute("SELECT * FROM calendar_blocks")]
-    second = turn(context, "My manager scheduled a 1-on-1 at 2 PM for 30 minutes â€” replan around it.")
+    second = turn(context, "My manager scheduled a 1-on-1 at 2 PM for 30 minutes — replan around it.")
     assert second.response == REPLAN_RESPONSE and second.state_version == 2
-    assert [item["tool"] for item in second.tool_trace] == ["get_schedule", "get_current_time", "propose_replan"]
+    assert [item["tool"] for item in second.tool_trace] == ["get_schedule", "get_current_time", "get_tasks", "propose_replan"]
     blocks, diff = proposal(context, second)
     assert len(diff["moved"]) == 2 and not diff["shortened"] and not diff["dropped"]
     assert next(b for b in blocks if b["title"] == "Grocery shopping")["start_time"][11:16] == "15:30"

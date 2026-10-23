@@ -36,7 +36,7 @@ export interface paths {
         post?: never;
         /**
          * Reset Session
-         * @description Atomically clear and re-seed a session, allowing one reset per five seconds.
+         * @description Atomically reset a session, reseeding only originally seeded demos, allowing one reset per five seconds.
          */
         delete: operations["reset_session_api_v1_sessions__sid__delete"];
         options?: never;
@@ -124,6 +124,61 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/sessions/{sid}/context": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Session Context */
+        get: operations["get_session_context_api_v1_sessions__sid__context_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sessions/{sid}/memory": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Memory Data
+         * @description Return memory entries belonging to the session and state version.
+         */
+        get: operations["get_memory_data_api_v1_sessions__sid__memory_get"];
+        put?: never;
+        /** Save Memory */
+        post: operations["save_memory_api_v1_sessions__sid__memory_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sessions/{sid}/memory/{mid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Memory */
+        delete: operations["delete_memory_api_v1_sessions__sid__memory__mid__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/sessions/{sid}/schedule": {
         parameters: {
             query?: never;
@@ -162,26 +217,6 @@ export interface paths {
          * @description Create a task without committing calendar changes.
          */
         post: operations["create_task_api_v1_sessions__sid__tasks_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/sessions/{sid}/memory": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Memory Data
-         * @description Return memory entries belonging to the session and state version.
-         */
-        get: operations["get_memory_data_api_v1_sessions__sid__memory_get"];
-        put?: never;
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -419,6 +454,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/mcp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Unsupported Stream */
+        get: operations["unsupported_stream_mcp_get"];
+        put?: never;
+        /** Post Mcp */
+        post: operations["post_mcp_mcp_post"];
+        /** Unsupported Stream */
+        delete: operations["unsupported_stream_mcp_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mcp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Unsupported Stream */
+        get: operations["unsupported_stream_api_v1_mcp_get"];
+        put?: never;
+        /** Post Mcp */
+        post: operations["post_mcp_api_v1_mcp_post"];
+        /** Unsupported Stream */
+        delete: operations["unsupported_stream_api_v1_mcp_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -531,6 +604,13 @@ export interface components {
             /** Offset Minutes */
             offset_minutes: number;
         };
+        /** DeletePreferenceResponse */
+        DeletePreferenceResponse: {
+            /** Deleted */
+            deleted: boolean;
+            /** State Version */
+            state_version: number;
+        };
         /**
          * ExecutionLogResponse
          * @description Represent execution log entries.
@@ -583,6 +663,22 @@ export interface components {
             provider_used: string;
             /** Degraded */
             degraded: boolean;
+        };
+        /** PreferenceInput */
+        PreferenceInput: {
+            /** Preference */
+            preference: string;
+        };
+        /** PreferenceResponse */
+        PreferenceResponse: {
+            /** Entry */
+            entry: {
+                [key: string]: unknown;
+            };
+            /** State Version */
+            state_version: number;
+            /** Saved */
+            saved: boolean;
         };
         /**
          * RoutineRequest
@@ -647,6 +743,15 @@ export interface components {
             seed: boolean;
             /** Demo Timestamp */
             demo_timestamp?: string | null;
+        };
+        /** SessionInfoResponse */
+        SessionInfoResponse: {
+            /** Timestamp */
+            timestamp: string;
+            /** State Version */
+            state_version: number;
+            /** Pending Plan Id */
+            pending_plan_id: string | null;
         };
         /**
          * SessionResetResponse
@@ -981,6 +1086,135 @@ export interface operations {
             };
         };
     };
+    get_session_context_api_v1_sessions__sid__context_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionInfoResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_memory_data_api_v1_sessions__sid__memory_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemoryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_memory_api_v1_sessions__sid__memory_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PreferenceInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PreferenceResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_memory_api_v1_sessions__sid__memory__mid__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sid: string;
+                mid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeletePreferenceResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_schedule_data_api_v1_sessions__sid__schedule_get: {
         parameters: {
             query?: never;
@@ -1065,37 +1299,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_memory_data_api_v1_sessions__sid__memory_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                sid: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MemoryResponse"];
                 };
             };
             /** @description Validation Error */
@@ -1527,6 +1730,126 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unsupported_stream_mcp_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    post_mcp_mcp_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    unsupported_stream_mcp_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    unsupported_stream_api_v1_mcp_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    post_mcp_api_v1_mcp_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    unsupported_stream_api_v1_mcp_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
         };

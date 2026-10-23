@@ -22,7 +22,7 @@ def get_calendar(session_id: str, args: dict, db_conn: Connection) -> dict:
     if args.get("date"):
         query += " AND substr(start_time, 1, length(?)) = ?"
         parameters.extend([args["date"], args["date"]])
-    return {"blocks": [dict(row) for row in db_conn.execute(query, parameters)]}
+    return {"blocks": [dict(row, immutable=bool(row['immutable'])) for row in db_conn.execute(query, parameters)]}
 
 
 def get_current_time(session_id: str, args: dict, db_conn: Connection) -> dict:
@@ -42,7 +42,7 @@ def get_schedule(session_id: str, args: dict, db_conn: Connection) -> dict:
         "SELECT * FROM calendar_blocks WHERE session_id = ? ORDER BY start_time",
         (session_id,),
     )
-    return {"blocks": [dict(row) for row in rows], "state_version": session["state_version"]}
+    return {"blocks": [dict(row, immutable=bool(row['immutable'])) for row in rows], "state_version": session["state_version"]}
 
 
 def get_memory(session_id: str, args: dict, db_conn: Connection) -> dict:

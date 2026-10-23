@@ -1,4 +1,4 @@
-﻿"""Release regressions for real task APIs and approval boundary integrity."""
+"""Release regressions for real task APIs and approval boundary integrity."""
 
 import json
 from copy import deepcopy

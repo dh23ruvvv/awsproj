@@ -9,6 +9,7 @@ from server.clock import now
 from server.config import settings
 
 SCHEMA = """
+CREATE TABLE IF NOT EXISTS mcp_defaults (name TEXT PRIMARY KEY, session_id TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE);
 CREATE TABLE IF NOT EXISTS task_drafts (id TEXT PRIMARY KEY, session_id TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE, state_version INTEGER NOT NULL, status TEXT NOT NULL, changes TEXT NOT NULL, raw_changes TEXT NOT NULL, explanation TEXT NOT NULL);
 CREATE INDEX IF NOT EXISTS idx_task_drafts_session ON task_drafts(session_id,status);
 CREATE TABLE IF NOT EXISTS agent_messages (id INTEGER PRIMARY KEY AUTOINCREMENT, session_id TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE, role TEXT NOT NULL, content TEXT NOT NULL);
@@ -17,7 +18,7 @@ CREATE TABLE IF NOT EXISTS workspaces (id TEXT PRIMARY KEY, created_at TEXT NOT 
 CREATE TABLE IF NOT EXISTS workspace_days (workspace_id TEXT NOT NULL REFERENCES workspaces(id), day TEXT NOT NULL, session_id TEXT NOT NULL REFERENCES sessions(id), PRIMARY KEY(workspace_id, day));
 CREATE TABLE IF NOT EXISTS routines (id TEXT PRIMARY KEY, workspace_id TEXT NOT NULL REFERENCES workspaces(id), name TEXT NOT NULL, weekdays TEXT NOT NULL, tasks TEXT NOT NULL, starts_on TEXT NOT NULL, active INTEGER NOT NULL DEFAULT 1);
 CREATE TABLE IF NOT EXISTS routine_occurrences (routine_id TEXT NOT NULL REFERENCES routines(id), session_id TEXT NOT NULL REFERENCES sessions(id), PRIMARY KEY(routine_id, session_id));
-CREATE TABLE IF NOT EXISTS sessions (id TEXT PRIMARY KEY, created_at TEXT NOT NULL, state_version INTEGER NOT NULL DEFAULT 1, demo_timestamp TEXT, provider TEXT NOT NULL DEFAULT 'deterministic');
+CREATE TABLE IF NOT EXISTS sessions (id TEXT PRIMARY KEY, created_at TEXT NOT NULL, state_version INTEGER NOT NULL DEFAULT 1, demo_timestamp TEXT, provider TEXT NOT NULL DEFAULT 'deterministic', seeded INTEGER NOT NULL DEFAULT 0);
 CREATE TABLE IF NOT EXISTS tasks (id TEXT PRIMARY KEY, session_id TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE, title TEXT NOT NULL, duration_minutes INTEGER NOT NULL CHECK(duration_minutes > 0), deadline TEXT, priority TEXT NOT NULL CHECK(priority IN ('HIGH','MEDIUM','LOW')), category TEXT NOT NULL CHECK(category IN ('work','personal','meeting')), status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','scheduled','completed','cancelled')), created_at TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS calendar_blocks (id TEXT PRIMARY KEY, session_id TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE, title TEXT NOT NULL, start_time TEXT NOT NULL, end_time TEXT NOT NULL, immutable INTEGER NOT NULL DEFAULT 0, task_id TEXT REFERENCES tasks(id), status TEXT NOT NULL DEFAULT 'scheduled' CHECK(status IN ('scheduled','completed','cancelled')), plan_id TEXT REFERENCES plans(id), created_at TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS plans (id TEXT PRIMARY KEY, session_id TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE, status TEXT NOT NULL DEFAULT 'PROPOSED' CHECK(status IN ('PROPOSED','CONFIRMED','EXECUTING','EXECUTED','FAILED','CANCELLED','STALE')), proposed_blocks TEXT NOT NULL, diff_summary TEXT, explanation TEXT, state_version_at_proposal INTEGER NOT NULL, provider_used TEXT NOT NULL, degraded INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL, confirmed_at TEXT, executed_at TEXT);
@@ -53,6 +54,9 @@ def init_db(db_path: str | None = None) -> None:
     connection = get_connection(db_path)
     try:
         connection.executescript(SCHEMA)
+        if 'seeded' not in {row['name'] for row in connection.execute('PRAGMA table_info(sessions)')}:
+            connection.execute('ALTER TABLE sessions ADD COLUMN seeded INTEGER NOT NULL DEFAULT 0')
+            connection.commit()
     finally:
         connection.close()
 
@@ -93,6 +97,7 @@ def seed_session(connection: sqlite3.Connection, session_id: str) -> None:
                 (str(uuid4()), session_id, block["title"], block["start_time"], block["end_time"],
                  block["immutable"], task_ids.get(block["task_id"]), block["status"], None, created_at),
             )
+        connection.execute("UPDATE sessions SET seeded=1 WHERE id=?", (session_id,))
         connection.execute("RELEASE SAVEPOINT seed_session")
     except Exception:
         connection.execute("ROLLBACK TO SAVEPOINT seed_session")

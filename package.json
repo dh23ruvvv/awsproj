@@ -9,7 +9,8 @@
     "smoke": "powershell -ExecutionPolicy Bypass -File scripts/smoke.ps1",
     "contract:check": "powershell -ExecutionPolicy Bypass -File scripts/contract_check.ps1",
     "test": "python -m pytest tests/ -p no:cacheprovider --basetemp .test-tmp-default",
-    "build": "npm --prefix frontend run build"
+    "build": "npm --prefix frontend run build",
+    "repomix": "powershell -ExecutionPolicy Bypass -File scripts/repomix.ps1"
   },
   "keywords": [
     "alexa-plus",

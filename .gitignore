@@ -55,3 +55,9 @@ htmlcov/
 .test-tmp*/
 .pytest_cache/
 artifacts/
+
+# Local agent prompts and internal review material
+.internal/
+flowpilot_review.txt
+codebase.txt
+repomix-output.xml

@@ -8,7 +8,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from server.config import settings
 from server.database import init_db
 from server.models import ErrorDetail, ErrorEnvelope
-from server.routers import agent, data, plans, sessions, tasks, commitments, workspaces, task_drafts
+from server.routers import agent, data, plans, sessions, tasks, commitments, workspaces, task_drafts, mcp
 
 
 @asynccontextmanager
@@ -50,11 +50,14 @@ app.include_router(tasks.router, prefix="/api/v1")
 app.include_router(commitments.router, prefix="/api/v1")
 app.include_router(workspaces.router, prefix="/api/v1")
 app.include_router(task_drafts.router, prefix="/api/v1")
+app.include_router(mcp.router)
+app.include_router(mcp.router, prefix="/api/v1")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[origin.strip() for origin in settings.flowpilot_cors_origins.split(",") if origin.strip()],
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["Mcp-Session-Id", "X-FlowPilot-Session-Id"],
 )
 
 # In production / single-process mode, serve built frontend assets if present

@@ -8,6 +8,7 @@ import jsonschema
 from server.tools.task_drafts import TaskDraftInput, propose_task_changes
 from server.tools.commit_tools import commit_schedule
 from server.tools.propose_tools import propose_schedule, propose_replan
+from server.tools.preferences import PreferenceInput, remember_preference
 
 from server.tools.read_tools import (
     get_calendar, get_current_time, get_memory, get_schedule, get_tasks,
@@ -19,7 +20,7 @@ class Tool:
     """Describe a tool without requiring an executable handler."""
 
     name: str
-    tier: Literal["READ", "PROPOSE", "COMMIT"]
+    tier: Literal["READ", "PROPOSE", "PREFERENCE", "COMMIT"]
     description: str
     input_schema: dict
     handler: Callable | None = None
@@ -70,7 +71,7 @@ def _proposal_schema(blocks_key: str) -> dict:
                         "title": {"type": "string", "maxLength": 200},
                         "start_time": {"type": "string", "format": "date-time"},
                         "end_time": {"type": "string", "format": "date-time"},
-                        "task_id": {"type": "string"},
+                        "task_id": {"type": ["string", "null"]},
                         "immutable": {"type": "boolean", "default": False},
                     },
                     "required": ["title", "start_time", "end_time"],
@@ -93,7 +94,8 @@ for _tool in (
     Tool("get_current_time", "READ", "Get current time (injectable)", _object_schema({}), get_current_time),
     Tool("get_schedule", "READ", "Get committed schedule", _object_schema({}), get_schedule),
     Tool("get_memory", "READ", "Retrieve stored memory entries", _object_schema({}), get_memory),
-    Tool("propose_task_changes", "PROPOSE", "Draft additions, full updates or removals of pending tasks for HUMAN REVIEW. Ask for missing durations or ambiguous task identity first. Never schedule newly drafted tasks until confirmed in a later turn.", TaskDraftInput.model_json_schema(), propose_task_changes),
+    Tool("remember_preference", "PREFERENCE", "Save an explicitly requested scheduling preference only. Never infer memories from task titles or ordinary planning requests. Does not change tasks or calendar.", PreferenceInput.model_json_schema(), remember_preference),
+    Tool("propose_task_changes", "PROPOSE", "Draft additions, partial updates or removals of pending tasks for HUMAN REVIEW. Ask for missing durations or ambiguous task identity first. Never schedule newly drafted tasks until confirmed in a later turn.", TaskDraftInput.model_json_schema(), propose_task_changes),
     Tool("propose_schedule", "PROPOSE", "Propose a new day schedule", _proposal_schema("blocks"), propose_schedule),
     Tool("propose_replan", "PROPOSE", "Propose schedule changes after interruption", _proposal_schema("new_blocks"), propose_replan),
     Tool("commit_schedule", "COMMIT", "Commit approved plan to schedule", _object_schema(

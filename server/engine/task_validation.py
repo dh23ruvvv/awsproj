@@ -12,7 +12,7 @@ def validate_task_allocations(db, sid, blocks):
     session = db.execute("SELECT demo_timestamp FROM sessions WHERE id=?", (sid,)).fetchone()
     current = _time(now(session["demo_timestamp"]))
     day_start = current.replace(hour=9, minute=0, second=0, microsecond=0)
-    day_end = current.replace(hour=17, minute=0, second=0, microsecond=0)
+    day_end = current.replace(hour=21, minute=0, second=0, microsecond=0)
     tasks = {row["id"]: dict(row) for row in db.execute("SELECT * FROM tasks WHERE session_id=?", (sid,))}
     for block in blocks:
         tid = block.get("task_id")
@@ -24,7 +24,7 @@ def validate_task_allocations(db, sid, blocks):
             continue
         start, end = _time(block["start_time"]), _time(block["end_time"])
         if not block.get("immutable") and block.get("status") != "completed" and (start < day_start or end > day_end):
-            errors.append(f"{task['title']} must fit within the 09:00–17:00 workday.")
+            errors.append(f"{task['title']} must fit within the 09:00–21:00 scheduling bounds.")
         totals[tid] += (end - start).total_seconds() / 60
         if task["deadline"] and end > _time(task["deadline"]):
             errors.append(f"{task['title']} exceeds its deadline; shorten the task estimate or choose another day.")

@@ -131,11 +131,11 @@ def test_stale(scenario, current, requested):
 
 
 def test_cancel(scenario):
-    """Cancellation is repeatable and prevents later confirmation."""
+    """Cancellation transitions once, conflicts on retry, and prevents confirmation."""
     client, sid, pid = scenario
     before = snapshot(sid)
-    for _ in range(2):
-        assert client.post(url(sid, pid) + "/cancel").json() == {"cancelled": True, "state_version": 1}
+    assert client.post(url(sid, pid) + "/cancel").json() == {"cancelled": True, "state_version": 1}
+    assert client.post(url(sid, pid) + "/cancel").status_code == 409
     assert rows("plans", sid)[0]["status"] == "CANCELLED"
     response = client.post(url(sid, pid) + "/confirm", json={})
     assert response.status_code == 409

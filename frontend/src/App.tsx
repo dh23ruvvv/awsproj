@@ -13,6 +13,9 @@ import UtteranceBar from './components/UtteranceBar';
 import ResponseLine from './components/ResponseLine';
 import ModeBadge from './components/ModeBadge';
 import MemoryIndicator from './components/MemoryIndicator';
+import ToolTrace from './components/ToolTrace';
+import { getSessionInfo, removePreference } from './api/client';
+import type { ToolTraceItem } from './api/client';
 import RoutineEditor from './components/RoutineEditor';
 import TaskDraftPreview from './components/TaskDraftPreview';
 import './App.css';
@@ -65,6 +68,7 @@ function shiftDay(day: string, delta: number) {
 
 /** Integrate the persistent session, proposal approval, and ambient schedule surface. */
 export default function App() {
+  const [linkedSession] = useState(() => new URLSearchParams(window.location.search).get('session'));
   const [snowEnabled, setSnowEnabled] = useState(() => localStorage.getItem('flowpilot_snow') !== 'off');
   const [search, setSearch] = useState('');
   const [sid, setSid] = useState('');
@@ -75,9 +79,13 @@ export default function App() {
   const [editingCommitment, setEditingCommitment] = useState(false);
   const [activeSidebarTab, setActiveSidebarTab] = useState<'timeline' | 'tasks'>('tasks');
   const [memory, setMemory] = useState<MemoryResponse['entries']>([]);
+  const [toolTrace, setToolTrace] = useState<ToolTraceItem[]>([]);
   const [agentResponse, setAgentResponse] = useState('Choose a day, add your tasks and commitments, then review a plan.');
-  const [providerUsed, setProviderUsed] = useState('deterministic');
-  const [requestedProvider, setRequestedProvider] = useState('deterministic');
+  const [providerUsed, setProviderUsed] = useState(() => localStorage.getItem('flowpilot_provider') || 'gemini');
+  const [requestedProvider, setRequestedProvider] = useState<'gemini' | 'deterministic'>(() => {
+    const saved = localStorage.getItem('flowpilot_provider');
+    return (saved === 'deterministic' || saved === 'gemini') ? saved : 'gemini';
+  });
   const [lastRequest, setLastRequest] = useState('');
   const [isDegraded, setIsDegraded] = useState(false);
   const [selectedDay, setSelectedDay] = useState(() => localStorage.getItem('flowpilot_day') || localDate());
@@ -99,7 +107,7 @@ export default function App() {
     schedule: Awaited<ReturnType<typeof getSchedule>>;
     memories: MemoryResponse;
     tasks: Record<string, unknown>[];
-    workspaceId: string; timestamp: string; routines: Routine[]; taskDraft: TaskDraft | null;
+    workspaceId: string; timestamp: string; routines: Routine[]; taskDraft: TaskDraft | null; pendingPlanId?: string | null;
   }> } | null>(null);
 
   useEffect(() => {
@@ -108,6 +116,13 @@ export default function App() {
     setError('');
     /** Reuse initialization across React StrictMode's effect replay. */
     async function initialize() {
+      if (linkedSession) {
+        const [info, schedule, memories, taskData, pendingTasks] = await Promise.all([
+          getSessionInfo(linkedSession), getSchedule(linkedSession), getMemory(linkedSession), getTasks(linkedSession), getPendingTaskDraft(linkedSession),
+        ]);
+        return {sessionId: linkedSession, schedule, memories, tasks: taskData.tasks, workspaceId: '', timestamp: info.timestamp,
+          routines: [], taskDraft: pendingTasks.draft, pendingPlanId: info.pending_plan_id};
+      }
       let wid = localStorage.getItem('flowpilot_workspace');
       if (!wid) {
         wid = (await createWorkspace()).workspace_id;
@@ -115,7 +130,19 @@ export default function App() {
         const previous = localStorage.getItem('flowpilot_sid');
         if (previous) localStorage.setItem('flowpilot_previous_demo_sid', previous);
       }
-      const day = await openDay(wid, selectedDay, -new Date(`${selectedDay}T12:00:00`).getTimezoneOffset());
+      let day;
+      const offsetMinutes = -new Date(`${selectedDay}T12:00:00`).getTimezoneOffset();
+      try {
+        day = await openDay(wid, selectedDay, offsetMinutes);
+      } catch (failure) {
+        // A deliberately cleared database leaves a stale browser workspace ID.
+        // Recover only a missing workspace; never hide network/server failures.
+        if (typeof failure !== 'object' || failure === null || !('error' in failure) ||
+            (failure as {error: {code: string}}).error.code !== 'HTTP_404') throw failure;
+        wid = (await createWorkspace()).workspace_id;
+        localStorage.setItem('flowpilot_workspace', wid);
+        day = await openDay(wid, selectedDay, offsetMinutes);
+      }
       const sessionId = day.session_id;
       const [schedule, memories, taskData, routineData, pendingTasks] = await Promise.all([
         getSchedule(sessionId), getMemory(sessionId), getTasks(sessionId), getRoutines(wid), getPendingTaskDraft(sessionId),
@@ -128,8 +155,12 @@ export default function App() {
       if (disposed) return;
       setBlocks(scheduleBlocks(result.schedule.blocks));
       setSid(result.sessionId);
-      localStorage.setItem('flowpilot_sid', result.sessionId);
-      localStorage.setItem('flowpilot_day', selectedDay);
+      if (!linkedSession) {
+        localStorage.setItem('flowpilot_sid', result.sessionId);
+        localStorage.setItem('flowpilot_day', selectedDay);
+      } else {
+        setSelectedDay(result.timestamp.slice(0, 10));
+      }
       setWorkspaceId(result.workspaceId);
       setDayOffset(result.timestamp.slice(-6));
       setRoutines(result.routines);
@@ -139,7 +170,7 @@ export default function App() {
       setMemory(result.memories.entries);
       if (result.tasks) setTasks(validateTasks(result.tasks));
 
-      const pendingId = localStorage.getItem(`flowpilot_plan_${result.sessionId}`);
+      const pendingId = result.pendingPlanId || localStorage.getItem(`flowpilot_plan_${result.sessionId}`);
       if (pendingId) await getPlan(result.sessionId, pendingId).then(plan => {
         if (disposed) return;
         if (plan.status === 'PROPOSED') setActivePlan({ planId: pendingId, diff: plan.diff ?? null, explanation: plan.explanation || '', version: plan.state_version_at_proposal, blocks: scheduleBlocks(plan.proposed_blocks) });
@@ -151,7 +182,7 @@ export default function App() {
       if (!disposed) setInitializing(false);
     });
     return () => { disposed = true; };
-  }, [retry, selectedDay]);
+  }, [retry, selectedDay, linkedSession]);
 
   /** Serialize mutations so proposal approval and reset cannot race. */
   async function runAction(action: () => Promise<void>) {
@@ -164,12 +195,18 @@ export default function App() {
   }
 
   function handleToggleProvider() {
-    setRequestedProvider(prev => prev === 'gemini' ? 'deterministic' : 'gemini');
+    setRequestedProvider(prev => {
+      const next = prev === 'gemini' ? 'deterministic' : 'gemini';
+      localStorage.setItem('flowpilot_provider', next);
+      setProviderUsed(next);
+      return next;
+    });
   }
 
   /** Send an utterance and retrieve the proposal selected by the agent. */
   async function handleSendMessage(utterance: string, fromSetup = false) {
-    if (!fromSetup && /^(plan( my)? day|plan my day|plan today)[.!?]?$/i.test(utterance.trim())) { setSetupOpen(true); return; }
+    const hasPendingTasks = tasks.some(task => task.status === 'pending');
+    if (!fromSetup && !hasPendingTasks && /^(plan( my)? day|plan today)[.!?]?$/i.test(utterance.trim())) { setSetupOpen(true); return; }
     if (!fromSetup && /^(add (an? )?interruption|interruption)[.!?]?$/i.test(utterance.trim())) { setEditingCommitment(true); return; }
     if (/\b(left|tasks|pending|status|remaining|show tasks)\b/i.test(utterance)) {
       setActiveSidebarTab('tasks');
@@ -179,7 +216,9 @@ export default function App() {
     if (reviewPending) return;
     await runAction(async () => {
       setLastRequest(utterance);
+      setToolTrace([]);
       const res = await sendMessage(sid, utterance, stateVersion, requestedProvider);
+      setToolTrace(res.tool_trace ?? []);
       setAgentResponse(res.response);
       setProviderUsed(res.provider_used);
       setIsDegraded(res.degraded);
@@ -193,6 +232,7 @@ export default function App() {
         localStorage.setItem(`flowpilot_plan_${sid}`, res.plan_id);
       }
       try {
+        setMemory((await getMemory(sid)).entries);
         const updatedTasks = await getTasks(sid);
         setTasks(validateTasks(updatedTasks.tasks));
       } catch { /* retain existing */ }
@@ -278,8 +318,9 @@ export default function App() {
   }
 
   function changeDay(day: string) {
-    if (loading || initializing || reviewPending || day === selectedDay) return;
+    if (linkedSession || loading || initializing || reviewPending || day === selectedDay) return;
     setSelectedDay(day); setInitializing(true); setSid(''); setTasks([]); setBlocks([]);
+    setToolTrace([]); setMemory([]);
     setEditingTask(null); setEditingCommitment(false); setSetupOpen(false); setSearch('');
     setLastRequest(''); setAgentResponse('Add tasks and events for this day, then preview your plan.');
   }
@@ -317,6 +358,7 @@ export default function App() {
   }
 
   const memorySummary = memory.map(entry => {
+    if (entry.key === 'scheduling_preference' && typeof entry.value === 'string') return entry.value;
     if (typeof entry.summary === 'string') return entry.summary;
     if (typeof entry.key === 'string' && typeof entry.value === 'string') return `${entry.key}: ${entry.value}`;
     return JSON.stringify(entry);
@@ -351,15 +393,15 @@ export default function App() {
       <div className="dashboard-toolbar">
         <div className="app-header-actions">
           <ModeBadge provider={providerUsed} degraded={isDegraded} /><button className="reset-demo" onClick={handleToggleProvider} disabled={loading || reviewPending}>Use {requestedProvider === 'gemini' ? 'demo planner' : 'Gemini'}</button>
-          <button className="reset-demo" onClick={() => setRoutinesOpen(value => !value)} disabled={!sid || initializing || loading || reviewPending}>Fixed plan / routine</button>
+          <button className="reset-demo" onClick={() => setRoutinesOpen(value => !value)} disabled={!workspaceId || !sid || initializing || loading || reviewPending}>Fixed plan / routine</button>
         </div>
       </div>
       <div className="day-navigation">
-        <button aria-label="Previous day" disabled={loading || initializing || reviewPending} onClick={() => changeDay(shiftDay(selectedDay, -1))}>&lt;</button>
-        <label>Planning day<input aria-label="Planning day" type="date" value={selectedDay} disabled={loading || initializing || reviewPending} onChange={e => e.target.value && changeDay(e.target.value)} /></label>
+        <button aria-label="Previous day" disabled={!!linkedSession || loading || initializing || reviewPending} onClick={() => changeDay(shiftDay(selectedDay, -1))}>&lt;</button>
+        <label>Planning day<input aria-label="Planning day" type="date" value={selectedDay} disabled={!!linkedSession || loading || initializing || reviewPending} onChange={e => e.target.value && changeDay(e.target.value)} /></label>
         <strong>{new Date(`${selectedDay}T12:00:00`).toLocaleDateString(undefined, {weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'})}</strong>
-        <button aria-label="Next day" disabled={loading || initializing || reviewPending} onClick={() => changeDay(shiftDay(selectedDay, 1))}>&gt;</button>
-        <button disabled={loading || initializing || reviewPending} onClick={() => changeDay(localDate())}>Today</button>
+        <button aria-label="Next day" disabled={!!linkedSession || loading || initializing || reviewPending} onClick={() => changeDay(shiftDay(selectedDay, 1))}>&gt;</button>
+        <button disabled={!!linkedSession || loading || initializing || reviewPending} onClick={() => changeDay(localDate())}>Today</button>
       </div>
       {reviewPending && <p className="mode-help">Confirm or cancel your proposed changes before changing days.</p>}
       {routinesOpen && <RoutineEditor routines={routines} day={selectedDay} busy={loading || initializing || reviewPending} onSave={handleSaveRoutine} onStop={handleStopRoutine} onClose={() => setRoutinesOpen(false)} />}
@@ -375,8 +417,8 @@ export default function App() {
           <div className="planner-panel" id="planner">
           <div className="surface-intro"><h2 id="interaction-heading"><PixelText>MAKE ROOM FOR WHAT MATTERS.</PixelText></h2><p>Tell me what needs to happen, or start with an example.</p></div>
           <div className="journey-steps" aria-label="Planning process"><span>01 Tell us</span><span>02 Review the changes</span><span>03 Approve your plan</span></div>
-          <UtteranceBar key={selectedDay} reply={agentResponse} onVoiceStart={() => setRequestedProvider('gemini')} onSubmit={handleSendMessage} loading={loading} disabled={initializing || !sid || reviewPending} />
-          <p className="mode-help">{requestedProvider === 'gemini' ? 'Next request: Gemini, with a clearly labeled fallback if unavailable.' : 'Plans use your saved tasks and fixed events, within 09:00-17:00. Nothing is scheduled without approval.'}</p>
+          <UtteranceBar key={selectedDay} reply={agentResponse} onVoiceStart={() => { setRequestedProvider('gemini'); localStorage.setItem('flowpilot_provider', 'gemini'); }} onSubmit={handleSendMessage} loading={loading} disabled={initializing || !sid || reviewPending} />
+          <p className="mode-help">{requestedProvider === 'gemini' ? 'Next request: Gemini, with a clearly labeled fallback if unavailable.' : 'Plans prefer 09:00-17:00, with overflow up to 21:00 when needed. Review and approve before saving.'}</p>
           {reviewPending && <p className="proposal-notice">Confirm or cancel the proposed changes below before starting another request.</p>}
           <div className="demo-suggestions" aria-label="Demo prompt suggestions">
             <div className="demo-suggestions__header">
@@ -422,7 +464,7 @@ export default function App() {
             </div>
             {editingTask && <TaskEditor key={editingTask === 'new' ? 'setup-new' : editingTask.id} task={editingTask === 'new' ? undefined : editingTask} offset={scheduleOffset} busy={loading || reviewPending} onSave={handleSaveTask} onClose={() => setEditingTask(null)} />}
             {tasks.length > 0 && <ul className="setup-task-list">{tasks.map(task => <li key={task.id}>{task.title} / {task.duration_minutes}m / {task.status}</li>)}</ul>}
-            <p>{tasks.filter(t => t.status === 'pending').length} pending tasks / {blocks.length} saved calendar blocks. Scheduling window: 09:00-17:00.</p>
+            <p>{tasks.filter(t => t.status === 'pending').length} pending tasks / {blocks.length} saved calendar blocks. Preferred hours: 09:00-17:00; overflow up to 21:00 when deadlines allow.</p>
             <div className="setup-actions"><button disabled={loading || reviewPending || !tasks.some(t => t.status === 'pending')} onClick={() => { setSetupOpen(false); void handleSendMessage('Plan my day', true); }}>Preview my day</button><button onClick={() => setSetupOpen(false)}>Close setup</button></div>
           </section>}
           {editingCommitment && activeSidebarTab !== 'timeline' && <CommitmentEditor date={scheduleDate} offset={scheduleOffset} busy={loading || reviewPending} onPropose={handleCommitment} onClose={() => setEditingCommitment(false)} />}
@@ -431,9 +473,15 @@ export default function App() {
             <ResponseLine text={initializing ? 'Connecting to your schedule…' : agentResponse} loading={loading} />
           </div>
           {error && <div className="app-error" role="alert"><p>{error}</p>{sid && <button onClick={() => window.location.reload()}>Reload saved state</button>}{!sid && <button onClick={() => { startup.current = null; setRetry(value => value + 1); }}>Retry connection</button>}</div>}
-          <MemoryIndicator summary={memorySummary} />
+          {linkedSession && <p className="linked-session">Reviewing a linked planning session. <a href="/">Return to personal days</a></p>}
+          <MemoryIndicator summary={memorySummary} entries={memory.flatMap(entry => typeof entry.id === 'string' && typeof entry.value === 'string' ? [{id: entry.id, value: entry.value}] : [])}
+            disabled={loading || initializing || reviewPending} onRemove={id => runAction(async () => {
+              const result = await removePreference(sid, id); setStateVersion(result.state_version);
+              setMemory((await getMemory(sid)).entries);
+            })} />
           {taskDraft && <TaskDraftPreview draft={taskDraft} busy={loading || initializing} onConfirm={handleConfirmTasks} onCancel={handleCancelTasks} />}
           <PlanPreview planId={activePlan?.planId} diff={activePlan?.diff} explanation={activePlan?.explanation} proposedBlocks={activePlan?.blocks} loading={loading || initializing} onConfirm={handleConfirmPlan} onCancel={handleCancelPlan} />
+          <ToolTrace trace={toolTrace} />
 
           </div>
         </section>

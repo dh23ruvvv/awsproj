@@ -7,14 +7,14 @@ from server.routers.tasks import TaskCreate
 
 
 class TaskChange(BaseModel):
-    """Updates supply the complete desired task; removals only need its ID."""
+    """Updates inherit omitted fields; removals only need the task ID."""
     model_config = ConfigDict(extra='forbid')
     action: Literal['add', 'update', 'remove']
     task_id: str | None = None
     title: str | None = None
     duration_minutes: int | None = None
-    priority: Literal['HIGH', 'MEDIUM', 'LOW'] = 'MEDIUM'
-    category: Literal['work', 'personal'] = 'work'
+    priority: Literal['HIGH', 'MEDIUM', 'LOW'] | None = None
+    category: Literal['work', 'personal'] | None = None
     deadline: str | None = None
 
 
@@ -38,15 +38,21 @@ def validate_changes(db, sid, changes):
             row = db.execute('SELECT * FROM tasks WHERE id=? AND session_id=?', (change.task_id, sid)).fetchone()
             if not row:
                 raise ValueError('Task does not belong to this day')
-            if row['status'] != 'pending' or db.execute('SELECT 1 FROM calendar_blocks WHERE task_id=?', (change.task_id,)).fetchone():
+            if row['status'] != 'pending' or db.execute('SELECT 1 FROM calendar_blocks WHERE task_id=? AND session_id=?', (change.task_id, sid)).fetchone():
                 raise ValueError('Scheduled or completed tasks are protected. Use a schedule proposal for calendar changes.')
             before = dict(row)
         elif change.task_id:
             raise ValueError('New tasks must not supply an existing task ID')
         after = None
         if change.action != 'remove':
-            validated = TaskCreate(state_version=1, title=change.title, duration_minutes=change.duration_minutes,
-                                   priority=change.priority, category=change.category, deadline=change.deadline)
+            supplied = change.model_fields_set
+            title = change.title if change.title is not None else (before['title'] if before else None)
+            duration = change.duration_minutes if change.duration_minutes is not None else (before['duration_minutes'] if before else None)
+            priority = change.priority or (before['priority'] if before else 'MEDIUM')
+            category = change.category or (before['category'] if before else 'work')
+            deadline = change.deadline if 'deadline' in supplied or not before else before['deadline']
+            validated = TaskCreate(state_version=1, title=title, duration_minutes=duration,
+                                   priority=priority, category=category, deadline=deadline)
             after = validated.model_dump(include={'title', 'duration_minutes', 'priority', 'category', 'deadline'})
         normalized.append({'action': change.action, 'task_id': change.task_id, 'before': before, 'after': after})
     return normalized
@@ -62,7 +68,7 @@ def propose_task_changes(session_id, args, db_conn):
         raise ValueError('Finish reviewing the calendar proposal before changing tasks')
     if db_conn.execute("SELECT 1 FROM task_drafts WHERE session_id=? AND status='PROPOSED'", (session_id,)).fetchone():
         raise ValueError('Finish reviewing the existing task changes first')
-    raw = [c.model_dump() for c in request.changes]
+    raw = [c.model_dump(exclude_unset=True) for c in request.changes]
     changes = validate_changes(db_conn, session_id, raw)
     draft_id = str(uuid4())
     db_conn.execute('INSERT INTO task_drafts (id,session_id,state_version,status,changes,raw_changes,explanation) VALUES (?,?,?,?,?,?,?)',
